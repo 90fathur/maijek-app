@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "130096544112",
+    "project_id": "maijek",
+    "storage_bucket": "maijek.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:130096544112:android:e0b6205071ecbd9d87f7b5",
+        "android_client_info": {
+          "package_name": "id.polman.maijek.driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6BmKXN41LayiqKswLJJ4nZbOtkyVtfsM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:130096544112:android:0ead1d40e321e0fe87f7b5",
+        "android_client_info": {
+          "package_name": "id.polman.maijek.user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6BmKXN41LayiqKswLJJ4nZbOtkyVtfsM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
