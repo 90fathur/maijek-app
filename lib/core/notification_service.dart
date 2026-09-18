@@ -10,10 +10,21 @@ import '../controllers/notification_controller.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  
-  final FlutterLocalNotificationsPlugin localNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
-  const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+
+  final FlutterLocalNotificationsPlugin localNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+  const DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      );
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsDarwin,
+  );
   await localNotificationsPlugin.initialize(settings: initializationSettings);
 
   const AndroidNotificationChannel defaultChannel = AndroidNotificationChannel(
@@ -34,7 +45,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     enableVibration: true,
   );
 
-  final androidImpl = localNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+  final androidImpl = localNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
   await androidImpl?.createNotificationChannel(defaultChannel);
   await androidImpl?.createNotificationChannel(orderChannel);
 
@@ -69,27 +83,31 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 class NotificationService {
-  static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  static final FirebaseMessaging _firebaseMessaging =
+      FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  static const AndroidNotificationChannel defaultChannel = AndroidNotificationChannel(
-    'high_importance_channel',
-    'Notifikasi Penting Maijek',
-    description: 'Saluran notifikasi utama untuk status perjalanan dan pesan.',
-    importance: Importance.max,
-    playSound: true,
-    enableVibration: true,
-  );
+  static const AndroidNotificationChannel defaultChannel =
+      AndroidNotificationChannel(
+        'high_importance_channel',
+        'Notifikasi Penting Maijek',
+        description:
+            'Saluran notifikasi utama untuk status perjalanan dan pesan.',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
 
-  static const AndroidNotificationChannel orderChannel = AndroidNotificationChannel(
-    'maifood_order_channel_v2',
-    'Status Pesanan Maijek',
-    description: 'Saluran notifikasi pembaruan pesanan dan makanan.',
-    importance: Importance.max,
-    playSound: true,
-    enableVibration: true,
-  );
+  static const AndroidNotificationChannel orderChannel =
+      AndroidNotificationChannel(
+        'maifood_order_channel_v2',
+        'Status Pesanan Maijek',
+        description: 'Saluran notifikasi pembaruan pesanan dan makanan.',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
 
   static Future<void> init() async {
     // Request permission (termasuk Android 13+ & iOS)
@@ -109,9 +127,19 @@ class NotificationService {
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
+    // Permissions already requested via FirebaseMessaging above.
+    const DarwinInitializationSettings initializationSettingsDarwin =
+        DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        );
 
     const InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsDarwin,
+        );
 
     await _localNotificationsPlugin.initialize(
       settings: initializationSettings,
@@ -122,7 +150,9 @@ class NotificationService {
     );
 
     final androidImpl = _localNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     await androidImpl?.createNotificationChannel(defaultChannel);
     await androidImpl?.createNotificationChannel(orderChannel);
     await androidImpl?.requestNotificationsPermission();
@@ -175,7 +205,8 @@ class NotificationService {
     });
 
     // Handle saat aplikasi dibuka dari keadaan mati (terminated) karena notifikasi diklik
-    RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
+    RemoteMessage? initialMessage = await _firebaseMessaging
+        .getInitialMessage();
     if (initialMessage != null) {
       Future.delayed(const Duration(milliseconds: 700), () {
         _handleNotificationClick(initialMessage.data.toString());
@@ -223,7 +254,10 @@ class NotificationService {
     }
   }
 
-  static void _showNotification(RemoteNotification? notification, Map<String, dynamic> data) {
+  static void _showNotification(
+    RemoteNotification? notification,
+    Map<String, dynamic> data,
+  ) {
     if (notification != null) {
       int notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
       _localNotificationsPlugin.show(
