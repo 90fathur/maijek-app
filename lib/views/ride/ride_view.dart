@@ -44,28 +44,34 @@ class _RideViewState extends State<RideView> {
   }
 
   Future<void> _getUserLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+      
+      if (permission == LocationPermission.deniedForever) return;
 
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 8),
+      );
+      LatLng userLatLng = LatLng(position.latitude, position.longitude);
+      
+      // Set default pickup ke lokasi saat ini
+      orderController.setPickup(userLatLng);
+      
+      // Geser peta ke lokasi pengguna jika widget masih aktif
+      if (mounted) {
+        mapController.animateCamera(CameraUpdate.newLatLngZoom(userLatLng, 15));
+      }
+    } catch (e) {
+      debugPrint("Gagal mengambil lokasi GPS: $e");
     }
-    
-    if (permission == LocationPermission.deniedForever) return;
-
-    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-    LatLng userLatLng = LatLng(position.latitude, position.longitude);
-    
-    // Set default pickup ke lokasi saat ini
-    orderController.setPickup(userLatLng);
-    
-    // Geser peta ke lokasi pengguna
-    mapController.animateCamera(CameraUpdate.newLatLngZoom(userLatLng, 15));
   }
 
   void _onMapCreated(GoogleMapController controller) {

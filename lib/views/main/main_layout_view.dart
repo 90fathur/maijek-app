@@ -53,6 +53,7 @@ class _MainLayoutViewState extends State<MainLayoutView> {
   }
 
   Future<void> _checkForUpdate() async {
+    if (!GetPlatform.isAndroid) return;
     try {
       final updateInfo = await InAppUpdate.checkForUpdate();
       if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {

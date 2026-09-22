@@ -26,10 +26,20 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Maijek needs your location to show nearby services, set pickup and drop-off points, and track deliveries even when the app is in the background.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Maijek requires access to your camera to take profile photos and capture documentation during registration and account verification.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Maijek requires access to your photo library to select profile pictures and upload images for orders and account setup.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Maijek requires permission to save receipts and transaction details to your photo library.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Maijek needs your location to show nearby services, set pickup and drop-off points, and track deliveries.</string>
+	<string>Maijek requires your location to determine pickup and drop-off points, calculate trip fares, and find nearby drivers.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Maijek requires your location to provide accurate trip navigation, real-time driver tracking, and delivery updates even in background.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Maijek requires your location to track ongoing trips and delivery status.</string>
+	<key>io.flutter.embedded_views_preview</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
