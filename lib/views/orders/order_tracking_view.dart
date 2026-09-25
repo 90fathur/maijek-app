@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../core/api_client.dart';
 import '../../core/contact_helper.dart';
 import '../../core/utils.dart';
+import '../../core/map_style.dart';
 import '../../controllers/order_tracking_controller.dart';
 import 'chat_view.dart';
 
@@ -78,6 +79,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
               );
             } else {
               return GoogleMap(
+                style: MapStyle.cleanStyle,
                 initialCameraPosition: CameraPosition(
                   target: trackingController.driverLocation.value ?? trackingController.pickupLocation ?? const LatLng(-6.200000, 106.816666),
                   zoom: 16,

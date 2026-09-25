@@ -95,10 +95,10 @@ class _MapPickerViewState extends State<MapPickerView> {
         children: [
           // Google Map
           GoogleMap(
+            style: MapStyle.cleanStyle,
             initialCameraPosition: CameraPosition(target: _centerPosition, zoom: 15),
             onMapCreated: (controller) {
               _mapController = controller;
-              _mapController?.setMapStyle(MapStyle.cleanStyle);
             },
             myLocationEnabled: true,
             myLocationButtonEnabled: false,

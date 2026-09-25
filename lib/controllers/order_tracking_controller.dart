@@ -471,7 +471,6 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
 
   void setMapController(GoogleMapController controller) {
     mapController = controller;
-    mapController?.setMapStyle(MapStyle.cleanStyle);
     if (driverLocation.value != null) {
       _animateCameraToDriver(driverLocation.value!, isInitial: true);
     } else if (pickupLocation != null) {

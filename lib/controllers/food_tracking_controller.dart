@@ -371,7 +371,6 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
 
   void setMapController(GoogleMapController controller) {
     mapController = controller;
-    mapController?.setMapStyle(MapStyle.cleanStyle);
     if (driverLocation.value != null) {
       mapController?.animateCamera(CameraUpdate.newLatLngZoom(driverLocation.value!, 16));
     }

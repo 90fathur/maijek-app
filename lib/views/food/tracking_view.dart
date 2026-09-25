@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../controllers/food_tracking_controller.dart';
 import '../../controllers/home_controller.dart';
 import '../../core/theme.dart';
+import '../../core/map_style.dart';
 import '../orders/chat_view.dart';
 import '../../core/api_client.dart';
 import '../../core/contact_helper.dart';
@@ -510,6 +511,7 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                 );
               } else {
                 return GoogleMap(
+                  style: MapStyle.cleanStyle,
                   initialCameraPosition: const CameraPosition(
                     target: LatLng(-6.200000, 106.816666),
                     zoom: 15,

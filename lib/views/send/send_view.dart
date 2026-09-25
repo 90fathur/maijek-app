@@ -22,7 +22,7 @@ class SendView extends StatefulWidget {
 class _SendViewState extends State<SendView> {
   final AuthController authController = Get.find<AuthController>();
   final OrderController orderController = Get.put(OrderController());
-  late GoogleMapController mapController;
+  GoogleMapController? mapController;
 
   @override
   void initState() {
@@ -56,7 +56,7 @@ class _SendViewState extends State<SendView> {
       
       // Geser peta ke lokasi pengguna jika widget masih aktif
       if (mounted) {
-        mapController.animateCamera(CameraUpdate.newLatLngZoom(userLatLng, 15));
+        mapController?.animateCamera(CameraUpdate.newLatLngZoom(userLatLng, 15));
       }
     } catch (e) {
       debugPrint("Gagal mengambil lokasi GPS: $e");
@@ -65,7 +65,6 @@ class _SendViewState extends State<SendView> {
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
-    mapController.setMapStyle(MapStyle.cleanStyle);
     _getUserLocation();
   }
 
@@ -84,7 +83,7 @@ class _SendViewState extends State<SendView> {
       } else {
         bounds = LatLngBounds(southwest: orderController.pickupLocation.value, northeast: orderController.dropoffLocation.value);
       }
-      mapController.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
+      mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
     }
   }
 
@@ -100,8 +99,9 @@ class _SendViewState extends State<SendView> {
               child: const Center(child: Text('Peta Google Maps (Hanya tampil di HP asli)')),
             )
           : Obx(() => GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: orderController.pickupLocation.value,
+              style: MapStyle.cleanStyle,
+              initialCameraPosition: const CameraPosition(
+                target: LatLng(-3.421586, 119.342158),
                 zoom: 15,
               ),
               myLocationEnabled: true,
@@ -216,7 +216,7 @@ class _SendViewState extends State<SendView> {
                       orderController.pickupLocation.value = result['latLng'];
                       orderController.pickupAddress.value = result['address'];
                       orderController.currentState.value = OrderState.selectingDropoff;
-                      mapController.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 15));
+                      mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 15));
                     }
                   },
                   child: Row(
