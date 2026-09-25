@@ -660,7 +660,21 @@ class _SendViewState extends State<SendView> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: orderController.isLoading.value ? null : () => orderController.createOrder(),
+              onPressed: orderController.isLoading.value ? null : () {
+                if (!authController.isLogged.value) {
+                  Get.toNamed('/login');
+                  Get.snackbar(
+                    'Perlu Masuk',
+                    'Silakan masuk atau daftar terlebih dahulu untuk melanjutkan pesanan',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.black87,
+                    colorText: Colors.white,
+                    margin: const EdgeInsets.all(16),
+                  );
+                  return;
+                }
+                orderController.createOrder();
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryBlue,
                 padding: const EdgeInsets.symmetric(vertical: 16),

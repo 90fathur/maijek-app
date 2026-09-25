@@ -587,6 +587,19 @@ class MartCheckoutView extends StatelessWidget {
                 onPressed: controller.isLoading.value
                     ? null
                     : () {
+                        if (!authController.isLogged.value) {
+                          Get.toNamed('/login');
+                          Get.snackbar(
+                            'Perlu Masuk',
+                            'Silakan masuk atau daftar terlebih dahulu untuk melanjutkan pesanan',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.black87,
+                            colorText: Colors.white,
+                            margin: const EdgeInsets.all(16),
+                          );
+                          return;
+                        }
+
                         if (controller.deliveryAddress.value.isEmpty || controller.deliveryAddress.value.contains('...')) {
                           Get.snackbar('Alamat Belum Dipilih', 'Silakan pilih lokasi pengantaran Anda terlebih dahulu');
                           return;

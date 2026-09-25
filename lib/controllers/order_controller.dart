@@ -668,6 +668,20 @@ class OrderController extends GetxController {
   }
 
   Future<void> createOrder() async {
+    // Intercept jika user belum login
+    if (!_authController.isLogged.value) {
+      Get.toNamed('/login');
+      Get.snackbar(
+        'Perlu Masuk',
+        'Silakan masuk atau daftar terlebih dahulu untuk melanjutkan pesanan',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.black87,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
     // Cek saldo jika menggunakan Mai-Pay
     if (paymentMethod.value == 'maipay') {
       double currentBalance = double.tryParse(_authController.userData['balance']?.toString() ?? '0') ?? 0;

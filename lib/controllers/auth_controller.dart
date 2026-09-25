@@ -46,15 +46,19 @@ class AuthController extends GetxController {
   Future<void> checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       isLogged.value = true;
       String? userStr = prefs.getString('user');
       if (userStr != null) {
-        userData.value = jsonDecode(userStr);
+        try {
+          userData.value = jsonDecode(userStr);
+        } catch (_) {}
       }
       fetchProfile(); // Sync balance & profile from server
       updateFcmToken(); // Refresh FCM token
-      Get.offAllNamed('/home');
+    } else {
+      isLogged.value = false;
+      userData.value = {};
     }
   }
 
@@ -419,6 +423,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> fetchProfile() async {
+    if (!isLogged.value) return;
     try {
       final response = await ApiClient.get('/user/profile');
       if (response.statusCode == 200) {

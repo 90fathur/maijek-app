@@ -720,6 +720,20 @@ class CheckoutView extends StatelessWidget {
                   onPressed: controller.isLoading.value
                       ? null
                       : () async {
+                          final authController = Get.find<AuthController>();
+                          if (!authController.isLogged.value) {
+                            Get.toNamed('/login');
+                            Get.snackbar(
+                              'Perlu Masuk',
+                              'Silakan masuk atau daftar terlebih dahulu untuk melanjutkan pesanan',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: Colors.black87,
+                              colorText: Colors.white,
+                              margin: const EdgeInsets.all(16),
+                            );
+                            return;
+                          }
+
                           if (controller.deliveryAddress.value.isEmpty || controller.deliveryAddress.value == "Pilih Lokasi Pengantaran...") {
                             Get.snackbar('Error', 'Silakan pilih titik koordinat pengantaran');
                             return;

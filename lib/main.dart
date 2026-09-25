@@ -30,10 +30,8 @@ void main() async {
   Get.put(AuthController());
   Get.lazyPut(() => MartController(), fenix: true);
   Get.lazyPut(() => FoodController(), fenix: true);
-  final prefs = await SharedPreferences.getInstance();
-  final String? token = prefs.getString('token');
 
-  runApp(MyApp(initialRoute: token != null ? '/home' : '/login'));
+  runApp(const MyApp(initialRoute: '/home'));
 }
 
 class MyApp extends StatelessWidget {

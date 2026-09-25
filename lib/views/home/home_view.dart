@@ -224,7 +224,13 @@ class HomeView extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           GestureDetector(
-            onTap: () => Get.toNamed('/profile'),
+            onTap: () {
+              if (!authController.isLogged.value) {
+                Get.toNamed('/login');
+              } else {
+                Get.toNamed('/profile');
+              }
+            },
             child: Obx(() {
               String photoUrl = (authController.userData['photo_url'] ?? '').toString();
               return Container(
@@ -278,6 +284,70 @@ class HomeView extends StatelessWidget {
 
   Widget _buildAccountCards() {
     return Obx(() {
+      if (!authController.isLogged.value) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppTheme.navyDark, AppTheme.primaryNavy],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppTheme.accentGold.withValues(alpha: 0.35)),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryNavy.withValues(alpha: 0.25),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentGold.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.login_rounded, color: AppTheme.accentGold, size: 22),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Selamat Datang di Maijek',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Masuk untuk pesan layanan & cek saldo MaiPay',
+                      style: TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () => Get.toNamed('/login'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentGold,
+                  foregroundColor: AppTheme.navyDark,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  minimumSize: const Size(0, 36),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: 0,
+                ),
+                child: const Text('Masuk', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ],
+          ),
+        );
+      }
+
       final balance = authController.userData['balance'] ?? 0;
       final balanceStr = Formatter.currency(balance);
       final coins = authController.userData['coins'] ?? 0;

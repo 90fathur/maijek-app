@@ -14,6 +14,22 @@ class MainLayoutController extends GetxController {
   var currentIndex = 0.obs;
 
   void changePage(int index) {
+    if (index != 0) {
+      if (Get.isRegistered<AuthController>()) {
+        final auth = Get.find<AuthController>();
+        if (!auth.isLogged.value) {
+          Get.toNamed('/login');
+          Get.snackbar(
+            'Akses Akun',
+            'Silakan masuk atau daftar untuk mengakses fitur akun ini.',
+            backgroundColor: AppTheme.primaryNavy,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.TOP,
+          );
+          return;
+        }
+      }
+    }
     currentIndex.value = index;
     if (Get.isRegistered<HomeController>()) {
       Get.find<HomeController>().checkActiveOrder();

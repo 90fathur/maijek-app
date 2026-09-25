@@ -223,6 +223,20 @@ class HomeController extends GetxController {
   }
 
   Future<void> checkDailyReward({bool isManual = false}) async {
+    if (Get.isRegistered<AuthController>() && !Get.find<AuthController>().isLogged.value) {
+      if (isManual) {
+        Get.toNamed('/login');
+        Get.snackbar(
+          'Perlu Masuk',
+          'Silakan masuk atau daftar terlebih dahulu untuk mengklaim koin',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+        );
+      }
+      return;
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       final todayStr = DateTime.now().toIso8601String().substring(0, 10);

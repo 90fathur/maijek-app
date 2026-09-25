@@ -455,6 +455,21 @@ class FoodController extends GetxController {
   }
 
   Future<bool> checkoutOrder(String address, double lat, double lng, double distance, String paymentMethod) async {
+    final authController = Get.find<AuthController>();
+    // Intercept jika user belum login
+    if (!authController.isLogged.value) {
+      Get.toNamed('/login');
+      Get.snackbar(
+        'Perlu Masuk',
+        'Silakan masuk atau daftar terlebih dahulu untuk melanjutkan pesanan',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.black87,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      return false;
+    }
+
     // Cek saldo jika menggunakan Mai-Pay
     if (paymentMethod == 'maipay') {
       final authController = Get.find<AuthController>();
