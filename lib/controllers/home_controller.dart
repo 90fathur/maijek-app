@@ -237,6 +237,14 @@ class HomeController extends GetxController {
       }
       return;
     }
+    // Jangan periksa daily reward jika user adalah tamu (belum login)
+    if (Get.isRegistered<AuthController>() && !Get.find<AuthController>().isLogged.value) {
+      if (isManual) {
+        Get.toNamed('/login');
+      }
+      return;
+    }
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final todayStr = DateTime.now().toIso8601String().substring(0, 10);

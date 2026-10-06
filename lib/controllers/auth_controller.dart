@@ -63,6 +63,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> updateFcmToken() async {
+    if (!isLogged.value) return;
     try {
       String? token = await NotificationService.getToken();
       if (token != null && token.isNotEmpty) {

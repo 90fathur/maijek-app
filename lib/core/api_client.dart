@@ -40,20 +40,25 @@ class ApiClient {
   static void _checkUnauthorized(int statusCode) async {
     if (statusCode == 401) {
       final prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('token');
+      final bool hadToken = token != null && token.isNotEmpty;
       await prefs.remove('token');
       await prefs.remove('user');
 
-      // Jangan pernah redirect atau tampilkan "Sesi Berakhir" jika pengguna sedang di halaman Login, Register, atau Verifikasi OTP
-      final currentRoute = Get.currentRoute;
-      final authRoutes = ['/login', '/register', '/verify-otp'];
-      if (!authRoutes.contains(currentRoute)) {
-        Get.offAllNamed('/login');
-        Get.snackbar(
-          'Sesi Berakhir',
-          'Sesi login Anda telah berakhir. Silakan masuk kembali.',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-        );
+      // HANYA redirect jika pengguna sebelumnya MEMANG sudah login (memiliki token) dan sesinya kedaluwarsa.
+      // Jika pengguna adalah tamu / guest (tidak pernah login), JANGAN PERNAH redirect ke login!
+      if (hadToken) {
+        final currentRoute = Get.currentRoute;
+        final authRoutes = ['/login', '/register', '/verify-otp'];
+        if (!authRoutes.contains(currentRoute)) {
+          Get.offAllNamed('/login');
+          Get.snackbar(
+            'Sesi Berakhir',
+            'Sesi login Anda telah berakhir. Silakan masuk kembali.',
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+          );
+        }
       }
     }
   }

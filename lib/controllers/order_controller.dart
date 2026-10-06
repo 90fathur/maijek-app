@@ -374,6 +374,7 @@ class OrderController extends GetxController {
   }
 
   Future<void> _checkActiveOrder() async {
+    if (!_authController.isLogged.value) return;
     try {
       final response = await ApiClient.get('/user/orders/active');
       if (response.statusCode == 200) {

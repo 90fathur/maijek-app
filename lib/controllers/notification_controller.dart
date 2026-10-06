@@ -15,6 +15,11 @@ class NotificationController extends GetxController {
   }
 
   Future<void> fetchNotifications() async {
+    if (Get.isRegistered<AuthController>() && !Get.find<AuthController>().isLogged.value) {
+      notifications.clear();
+      return;
+    }
+
     isLoading.value = true;
     try {
       final response = await ApiClient.get('/user/notifications');
