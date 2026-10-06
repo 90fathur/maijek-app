@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:get/get.dart';
 import '../core/api_client.dart';
+import 'auth_controller.dart';
 
 class NotificationController extends GetxController {
   var isLoading = false.obs;
