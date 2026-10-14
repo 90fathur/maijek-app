@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
@@ -85,6 +86,22 @@ class ApiClient {
     return response;
   }
 
+  static MediaType _resolveMediaType(String filePath) {
+    final ext = filePath.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'png':
+        return MediaType('image', 'png');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'pdf':
+        return MediaType('application', 'pdf');
+      case 'jpg':
+      case 'jpeg':
+      default:
+        return MediaType('image', 'jpeg');
+    }
+  }
+
   static Future<http.StreamedResponse> multipartPost(
     String endpoint,
     Map<String, String> fields, {
@@ -102,7 +119,11 @@ class ApiClient {
     request.fields.addAll(fields);
 
     if (fileKey != null && filePath != null && filePath.isNotEmpty) {
-      request.files.add(await http.MultipartFile.fromPath(fileKey, filePath));
+      request.files.add(await http.MultipartFile.fromPath(
+        fileKey,
+        filePath,
+        contentType: _resolveMediaType(filePath),
+      ));
     }
 
     return await request.send().timeout(const Duration(seconds: 30));
