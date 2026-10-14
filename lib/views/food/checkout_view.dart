@@ -594,22 +594,37 @@ class CheckoutView extends StatelessWidget {
                             children: [
                               const Text('Metode Pembayaran', style: TextStyle(fontWeight: FontWeight.bold)),
                               DropdownButton<String>(
-                                value: controller.paymentMethod.value,
+                                value: ['cash', 'maipay', 'split_delivery_maipay'].contains(controller.paymentMethod.value)
+                                    ? controller.paymentMethod.value
+                                    : 'cash',
+                                isDense: true,
                                 items: const [
-                                  DropdownMenuItem(value: 'cash', child: Text('💵 Tunai')),
-                                  DropdownMenuItem(value: 'maipay', child: Text('💳 Mai-Pay')),
+                                  DropdownMenuItem(value: 'cash', child: Text('💵 Tunai (Cash)')),
+                                  DropdownMenuItem(value: 'maipay', child: Text('💳 Mai-Pay Penuh')),
+                                  DropdownMenuItem(value: 'split_delivery_maipay', child: Text('⚡ Split (Ongkir Saldo + Makanan Tunai)')),
                                 ],
                                 onChanged: (val) {
                                   if (val != null) {
                                     controller.paymentMethod.value = val;
+                                    final authCtrl = Get.find<AuthController>();
+                                    final bal = double.tryParse(authCtrl.userData['balance']?.toString() ?? '0') ?? 0;
                                     if (val == 'maipay') {
-                                      final authCtrl = Get.find<AuthController>();
-                                      final bal = double.tryParse(authCtrl.userData['balance']?.toString() ?? '0') ?? 0;
                                       final total = controller.finalTotal.toDouble();
                                       if (bal < total) {
                                         InsufficientBalanceSheet.show(
                                           currentBalance: bal,
                                           requiredAmount: total,
+                                          onPayCash: () {
+                                            controller.paymentMethod.value = 'cash';
+                                          },
+                                        );
+                                      }
+                                    } else if (val == 'split_delivery_maipay') {
+                                      final fee = deliveryFee.toDouble();
+                                      if (bal < fee) {
+                                        InsufficientBalanceSheet.show(
+                                          currentBalance: bal,
+                                          requiredAmount: fee,
                                           onPayCash: () {
                                             controller.paymentMethod.value = 'cash';
                                           },
@@ -689,11 +704,100 @@ class CheckoutView extends StatelessWidget {
                               },
                             ),
                           ],
+                          if (controller.paymentMethod.value == 'split_delivery_maipay') ...[
+                            Builder(
+                              builder: (context) {
+                                final authCtrl = Get.find<AuthController>();
+                                final bal = double.tryParse(authCtrl.userData['balance']?.toString() ?? '0') ?? 0;
+                                final fee = deliveryFee.toDouble();
+                                final isShort = bal < fee;
+                                final deficit = fee - bal;
+                                final cashFood = (controller.cartTotal - controller.discountAmount).clamp(0, double.infinity);
+                                int recommended = 10000;
+                                if (deficit > 10000) recommended = ((deficit / 10000).ceil()) * 10000;
+
+                                return Container(
+                                  margin: const EdgeInsets.only(top: 6, bottom: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isShort ? Colors.orange.shade50 : const Color(0xFFF0FDF4),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: isShort ? Colors.orange.shade300 : const Color(0xFF86EFAC)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            isShort ? Icons.warning_amber_rounded : Icons.check_circle_rounded,
+                                            color: isShort ? Colors.deepOrange : const Color(0xFF16A34A),
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              isShort ? 'Saldo Mai-Pay Kurang untuk Bayar Ongkir' : 'Saldo Cukup untuk Bayar Ongkir',
+                                              style: TextStyle(
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: isShort ? Colors.deepOrange.shade900 : const Color(0xFF15803D),
+                                              ),
+                                            ),
+                                          ),
+                                          if (isShort)
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                Get.to(() => TopUpView(initialAmount: recommended));
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppTheme.primaryBlue,
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                                                minimumSize: const Size(0, 28),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                              ),
+                                              child: const Text('+ Top Up', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                            ),
+                                        ],
+                                      ),
+                                      const Divider(height: 16),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text('💳 Potong Saldo Mai-Pay (Ongkir):', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                                          Text(formatter.format(fee), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text('💵 Siapkan Uang Pas ke Driver (Makanan):', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                                          Text(formatter.format(cashFood), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green)),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                           const SizedBox(height: 8),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Total Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Total Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                                  if (controller.paymentMethod.value == 'split_delivery_maipay')
+                                    const Text(
+                                      '(Saldo Ongkir + Tunai Makanan)',
+                                      style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600),
+                                    ),
+                                ],
+                              ),
                               Text(
                                 formatter.format(controller.finalTotal),
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryBlue),

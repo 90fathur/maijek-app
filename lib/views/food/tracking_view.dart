@@ -9,6 +9,7 @@ import '../../core/map_style.dart';
 import '../orders/chat_view.dart';
 import '../../core/api_client.dart';
 import '../../core/contact_helper.dart';
+import '../../core/utils.dart';
 import 'merchants_view.dart';
 
 class FoodTrackingView extends StatefulWidget {
@@ -1154,6 +1155,12 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                     ),
                   ],
 
+                  // 💳 Info Rincian Pembayaran (Split, MaiPay, Tunai)
+                  if (order['status'] != 'cancelled') ...[
+                    const SizedBox(height: 12),
+                    _buildPaymentStatusCard(order),
+                  ],
+
                   // 🚫 Tombol Batalkan Pesanan Mai-Food
                   if (['pending', 'accepted_by_merchant', 'processing', 'ready'].contains(order['status'])) ...[
                     const SizedBox(height: 16),
@@ -1292,6 +1299,136 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
       ),
       isScrollControlled: true,
     );
+  }
+
+  Widget _buildPaymentStatusCard(dynamic order) {
+    final String paymentMethod = (order['payment_method'] ?? 'cash').toString();
+    final bool isSplit = paymentMethod == 'split_delivery_maipay' || (order['is_split_payment'] == true);
+    final double foodTotal = double.tryParse(order['food_total']?.toString() ?? '0') ?? 0;
+    final double deliveryFee = double.tryParse(order['delivery_fee']?.toString() ?? '0') ?? 0;
+    final double discount = double.tryParse(order['discount_amount']?.toString() ?? '0') ?? 0;
+    final double totalPrice = double.tryParse(order['total_price']?.toString() ?? '0') ?? (foodTotal + deliveryFee - discount);
+    final double cashToDriver = (foodTotal - discount).clamp(0, double.infinity);
+
+    if (isSplit) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.bolt, color: Colors.deepOrange, size: 18),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Pembayaran Split (Digital + Tunai)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF14532D)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('💳 Ongkir via MaiPay:', style: TextStyle(fontSize: 12.5, color: Colors.black87)),
+                Text('${Formatter.currency(deliveryFee)} (LUNAS)', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Colors.blue)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('💵 Tunai ke Driver (Makanan):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                Text(Formatter.currency(cashToDriver), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF16A34A))),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 16, color: Color(0xFF15803D)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Hanya siapkan tunai ${Formatter.currency(cashToDriver)} untuk makanan. Ongkos kirim sudah dibayar digital.',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF15803D), fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (paymentMethod == 'maipay') {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.blue.shade200),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.blue, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Lunas via Mai-Pay (${Formatter.currency(totalPrice)})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blue)),
+                  const Text('Anda tidak perlu membayar tunai apapun ke driver.', style: TextStyle(fontSize: 11.5, color: Colors.black54)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.payments_outlined, color: Colors.green, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Pembayaran Tunai: ${Formatter.currency(totalPrice)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+                  const Text('Siapkan uang pas untuk driver saat pesanan tiba.', style: TextStyle(fontSize: 11.5, color: Colors.black54)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Widget _buildContactButton({

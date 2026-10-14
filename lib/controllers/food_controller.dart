@@ -470,7 +470,7 @@ class FoodController extends GetxController {
       return false;
     }
 
-    // Cek saldo jika menggunakan Mai-Pay
+    // Cek saldo jika menggunakan Mai-Pay (Penuh atau Split Ongkir)
     if (paymentMethod == 'maipay') {
       final authController = Get.find<AuthController>();
       double currentBalance = double.tryParse(authController.userData['balance']?.toString() ?? '0') ?? 0;
@@ -479,6 +479,21 @@ class FoodController extends GetxController {
         InsufficientBalanceSheet.show(
           currentBalance: currentBalance,
           requiredAmount: totalAmount,
+          onPayCash: () {
+            this.paymentMethod.value = 'cash';
+            checkoutOrder(address, lat, lng, distance, 'cash');
+          },
+        );
+        return false;
+      }
+    } else if (paymentMethod == 'split_delivery_maipay') {
+      final authController = Get.find<AuthController>();
+      double currentBalance = double.tryParse(authController.userData['balance']?.toString() ?? '0') ?? 0;
+      double deliveryAmount = calculateDeliveryFee(selectedVehicleType.value).toDouble();
+      if (currentBalance < deliveryAmount) {
+        InsufficientBalanceSheet.show(
+          currentBalance: currentBalance,
+          requiredAmount: deliveryAmount,
           onPayCash: () {
             this.paymentMethod.value = 'cash';
             checkoutOrder(address, lat, lng, distance, 'cash');
@@ -528,9 +543,12 @@ class FoodController extends GetxController {
         if (msg.toLowerCase().contains('saldo') && msg.toLowerCase().contains('mencukupi')) {
           final authController = Get.find<AuthController>();
           double currentBalance = double.tryParse(authController.userData['balance']?.toString() ?? '0') ?? 0;
+          double requiredAmt = (paymentMethod == 'split_delivery_maipay')
+              ? calculateDeliveryFee(selectedVehicleType.value).toDouble()
+              : finalTotal.toDouble();
           InsufficientBalanceSheet.show(
             currentBalance: currentBalance,
-            requiredAmount: finalTotal.toDouble(),
+            requiredAmount: requiredAmt,
             onPayCash: () {
               this.paymentMethod.value = 'cash';
               checkoutOrder(address, lat, lng, distance, 'cash');
