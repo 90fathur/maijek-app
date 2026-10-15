@@ -8,7 +8,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../core/api_client.dart';
-import '../core/map_style.dart';
 
 class OrderTrackingController extends GetxController with GetSingleTickerProviderStateMixin {
   final String orderId;
@@ -47,6 +46,29 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
   var discountAmount = 0.0.obs;
   var originalFare = 0.0.obs;
   var promoCode = ''.obs;
+
+  // Variabel Khusus Mai-Titip & Jastip
+  var itemDescription = ''.obs;
+  var titipItemPrice = 0.0.obs;
+  var titipTotalCost = 0.0.obs;
+  var titipReceiptImgUrl = ''.obs;
+  var notes = ''.obs;
+  var titipStatusTitle = ''.obs;
+  var titipStatusDesc = ''.obs;
+  var titipStep = 1.obs; // 1: cari driver, 2: ke toko, 3: belanja di toko, 4: antar ke pemesan, 5: selesai
+  var cashToPayDriver = 0.0.obs;
+
+  bool get isTitipOrder => serviceType.value.toLowerCase().contains('titip');
+
+  List<String> get parsedShoppingItems {
+    final desc = itemDescription.value.trim();
+    if (desc.isEmpty) return [];
+    return desc
+        .split(RegExp(r'\r?\n|;'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
 
   // Animasi & Rotasi Variabel
   AnimationController? _animController;
@@ -152,6 +174,23 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
         originalFare.value = orderPrice.value + discountAmount.value;
         promoCode.value = order['promo_code']?.toString() ?? '';
         
+        // Simpan data khusus Mai-Titip
+        itemDescription.value = order['item_description']?.toString() ?? '';
+        titipItemPrice.value = double.tryParse(order['titip_item_price']?.toString() ?? '0') ?? 0;
+        titipTotalCost.value = double.tryParse(order['titip_total_cost']?.toString() ?? '') ?? 0;
+        titipReceiptImgUrl.value = order['titip_receipt_img_url']?.toString() ?? 
+            (order['titip_receipt_img'] != null && order['titip_receipt_img'].toString().isNotEmpty
+                ? ApiClient.getImageUrl(order['titip_receipt_img'].toString())
+                : '');
+        notes.value = order['notes']?.toString() ?? '';
+        titipStatusTitle.value = order['titip_status_title']?.toString() ?? '';
+        titipStatusDesc.value = order['titip_status_desc']?.toString() ?? '';
+        titipStep.value = int.tryParse(order['titip_step']?.toString() ?? '1') ?? 1;
+
+        double shoppingCost = titipTotalCost.value > 0 ? titipTotalCost.value : titipItemPrice.value;
+        cashToPayDriver.value = double.tryParse(order['cash_to_pay_driver']?.toString() ?? '') ??
+            ((paymentMethod.value == 'cash' ? orderPrice.value : 0) + shoppingCost);
+
         // Simpan titik jemput / antar dari response
         if (order['pickup_lat'] != null) {
           pickupLocation = LatLng(double.parse(order['pickup_lat'].toString()), double.parse(order['pickup_lng'].toString()));
@@ -283,20 +322,25 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
   }
 
   void _updateStaticMarkers() {
+    final bool isTitip = serviceType.value.toLowerCase().contains('titip');
+    final bool isSend = serviceType.value.toLowerCase().contains('send');
+
     if (pickupLocation != null) {
+      String pTitle = isTitip ? '🏪 Toko / Lokasi Belanja' : (isSend ? '📦 Lokasi Paket' : 'Titik Jemput');
       markers[const MarkerId('pickup')] = Marker(
         markerId: const MarkerId('pickup'),
         position: pickupLocation!,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        infoWindow: const InfoWindow(title: 'Titik Jemput'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(isTitip ? BitmapDescriptor.hueCyan : BitmapDescriptor.hueBlue),
+        infoWindow: InfoWindow(title: pTitle, snippet: pickupAddress.value),
       );
     }
     if (dropoffLocation != null) {
+      String dTitle = isTitip ? '🏠 Alamat Antar Belanja' : (isSend ? '📍 Penerima Paket' : 'Titik Tujuan');
       markers[const MarkerId('dropoff')] = Marker(
         markerId: const MarkerId('dropoff'),
         position: dropoffLocation!,
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: const InfoWindow(title: 'Titik Tujuan'),
+        infoWindow: InfoWindow(title: dTitle, snippet: dropoffAddress.value),
       );
     }
   }
@@ -524,8 +568,13 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
       etaRangeText.value = '$minMin-$maxMin mnt';
       DateTime arrival = DateTime.now().add(Duration(minutes: (minMin + maxMin) ~/ 2));
       etaArrivalClock.value = 'Tiba ~${arrival.hour.toString().padLeft(2, '0')}:${arrival.minute.toString().padLeft(2, '0')}';
-      etaTitle.value = isCar ? 'Mencari Driver MaiCar...' : 'Mencari Driver MaiRide...';
-      etaSubtitle.value = 'Estimasi perjalanan: $minMin-$maxMin mnt (${etaArrivalClock.value})';
+      etaTitle.value = isTitip
+          ? 'Mencari Driver Mai-Titip...'
+          : (isCar ? 'Mencari Driver MaiCar...' : 'Mencari Driver MaiRide...');
+      etaSubtitle.value = isTitip
+          ? 'Menghubungkan ke driver terdekat untuk berbelanja.'
+          : 'Estimasi perjalanan: $minMin-$maxMin mnt (${etaArrivalClock.value})';
+      titipStep.value = 1;
     } else if (st == 'accepted') {
       int pickupMin = 4;
       if (driverLocation.value != null && pickupLocation != null) {
@@ -539,8 +588,24 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
       etaRangeText.value = '~$pickupMin mnt';
       DateTime arrival = DateTime.now().add(Duration(minutes: pickupMin));
       etaArrivalClock.value = 'Tiba ~${arrival.hour.toString().padLeft(2, '0')}:${arrival.minute.toString().padLeft(2, '0')}';
-      etaTitle.value = isCar ? 'Driver MaiCar Menuju Lokasi Anda' : 'Driver MaiRide Menuju Lokasi Anda';
-      etaSubtitle.value = 'Estimasi tiba di titik jemput: ~$pickupMin mnt (${etaArrivalClock.value})';
+      etaTitle.value = isTitip
+          ? 'Driver Menuju Lokasi Belanja 🏪'
+          : (isCar ? 'Driver MaiCar Menuju Lokasi Anda' : 'Driver MaiRide Menuju Lokasi Anda');
+      etaSubtitle.value = isTitip
+          ? 'Driver sedang menuju toko untuk membelikan barang Anda (~$pickupMin mnt)'
+          : 'Estimasi tiba di titik jemput: ~$pickupMin mnt (${etaArrivalClock.value})';
+      titipStep.value = 2;
+    } else if (st == 'arrived') {
+      etaMinutes.value = 0;
+      etaRangeText.value = 'Sedang Belanja';
+      etaArrivalClock.value = 'Di Toko';
+      etaTitle.value = isTitip
+          ? 'Driver Sedang Berbelanja di Toko 🛍️'
+          : 'Driver Telah Tiba di Titik Jemput';
+      etaSubtitle.value = isTitip
+          ? 'Driver sedang menyiapkan dan membayar belanjaan Anda di kasir.'
+          : 'Driver sudah sampai dan sedang menunggu Anda.';
+      titipStep.value = 3;
     } else if (st == 'in_progress') {
       int tripMin = isCar ? (dist * 3.0 + 5).round() : (dist * 2.4 + 3).round();
       if (driverLocation.value != null && dropoffLocation != null) {
@@ -554,14 +619,20 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
       etaRangeText.value = '~$tripMin mnt';
       DateTime arrival = DateTime.now().add(Duration(minutes: tripMin));
       etaArrivalClock.value = 'Tiba ~${arrival.hour.toString().padLeft(2, '0')}:${arrival.minute.toString().padLeft(2, '0')}';
-      etaTitle.value = isCar ? 'Dalam Perjalanan MaiCar Menuju Tujuan' : 'Dalam Perjalanan MaiRide Menuju Tujuan';
-      etaSubtitle.value = 'Estimasi sampai tujuan: ~$tripMin mnt (${etaArrivalClock.value})';
+      etaTitle.value = isTitip
+          ? 'Belanja Selesai! Driver Mengantar ke Anda 🛵'
+          : (isCar ? 'Dalam Perjalanan MaiCar Menuju Tujuan' : 'Dalam Perjalanan MaiRide Menuju Tujuan');
+      etaSubtitle.value = isTitip
+          ? 'Driver dalam perjalanan mengantarkan belanjaan ke lokasi Anda (~$tripMin mnt)'
+          : 'Estimasi sampai tujuan: ~$tripMin mnt (${etaArrivalClock.value})';
+      titipStep.value = 4;
     } else {
       etaMinutes.value = 0;
       etaArrivalClock.value = '';
       etaRangeText.value = '';
       etaTitle.value = '';
       etaSubtitle.value = '';
+      titipStep.value = 5;
     }
   }
 

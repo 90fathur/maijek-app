@@ -190,14 +190,14 @@ class _TitipViewState extends State<TitipView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isPickup ? 'Tentukan Titik Jemput' : 'Mau Pergi Ke Mana?', 
+                isPickup ? 'Tentukan Lokasi Toko / Belanja' : 'Tentukan Alamat Pengantaran', 
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
               ),
               if (orderController.currentState.value == OrderState.calculating)
                 const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           
           // Custom Location Input Field
           Container(
@@ -209,7 +209,7 @@ class _TitipViewState extends State<TitipView> {
             ),
             child: Column(
               children: [
-                // Pickup Row
+                // Pickup / Toko Row
                 GestureDetector(
                   onTap: () async {
                     var result = await Get.to(() => const LocationSearchView(), arguments: 'pickup');
@@ -222,19 +222,26 @@ class _TitipViewState extends State<TitipView> {
                   },
                   child: Row(
                     children: [
-                      Icon(Icons.trip_origin, color: isPickup ? AppTheme.primaryBlue : Colors.grey, size: 20),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isPickup ? Colors.teal.shade50 : Colors.grey.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.storefront_rounded, color: isPickup ? Colors.teal.shade700 : Colors.grey, size: 20),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Dari', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                            const Text('Lokasi Toko / Pembelian', style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted, fontWeight: FontWeight.w600)),
                             Text(
-                              orderController.pickupAddress.value.isEmpty ? 'Pilih di peta atau ketik...' : orderController.pickupAddress.value,
+                              orderController.pickupAddress.value.isEmpty ? 'Pilih toko di peta atau cari nama toko...' : orderController.pickupAddress.value,
                               style: TextStyle(
-                                fontSize: 14, 
+                                fontSize: 13.5, 
                                 fontWeight: isPickup ? FontWeight.bold : FontWeight.normal,
-                                color: isPickup ? AppTheme.primaryBlue : AppTheme.textMain,
+                                color: isPickup ? Colors.teal.shade900 : AppTheme.textMain,
                               ),
                               maxLines: 1, overflow: TextOverflow.ellipsis,
                             ),
@@ -247,14 +254,14 @@ class _TitipViewState extends State<TitipView> {
                 
                 // Connecting Line
                 Container(
-                  margin: const EdgeInsets.only(left: 9, top: 4, bottom: 4),
-                  height: 20,
+                  margin: const EdgeInsets.only(left: 15, top: 4, bottom: 4),
+                  height: 18,
                   width: 2,
                   color: Colors.grey.shade300,
                   alignment: Alignment.centerLeft,
                 ),
                 
-                // Dropoff Row
+                // Dropoff / Rumah Row
                 GestureDetector(
                   onTap: () async {
                     var result = await Get.to(() => const LocationSearchView(), arguments: 'dropoff');
@@ -266,19 +273,26 @@ class _TitipViewState extends State<TitipView> {
                   },
                   child: Row(
                     children: [
-                      Icon(Icons.location_on, color: !isPickup ? Colors.red : Colors.grey, size: 20),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: !isPickup ? Colors.red.shade50 : Colors.grey.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.home_rounded, color: !isPickup ? Colors.red.shade700 : Colors.grey, size: 20),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Ke', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                            const Text('Alamat Pengantaran Belanja', style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted, fontWeight: FontWeight.w600)),
                             Text(
-                              orderController.dropoffAddress.value.isEmpty ? 'Ketik tujuan Anda...' : orderController.dropoffAddress.value,
+                              orderController.dropoffAddress.value.isEmpty ? 'Ketik alamat rumah / pengantaran...' : orderController.dropoffAddress.value,
                               style: TextStyle(
-                                fontSize: 14, 
+                                fontSize: 13.5, 
                                 fontWeight: !isPickup ? FontWeight.bold : FontWeight.normal,
-                                color: !isPickup ? Colors.red : AppTheme.textMain,
+                                color: !isPickup ? Colors.red.shade900 : AppTheme.textMain,
                               ),
                               maxLines: 1, overflow: TextOverflow.ellipsis,
                             ),
@@ -291,7 +305,7 @@ class _TitipViewState extends State<TitipView> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           
           // Action Button
           SizedBox(
@@ -304,12 +318,12 @@ class _TitipViewState extends State<TitipView> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryBlue,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: Text(
-                isPickup ? 'Konfirmasi Jemput' : 'Geser Peta Untuk Tujuan', 
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)
+                isPickup ? 'Konfirmasi Lokasi Toko' : 'Konfirmasi Alamat Pengantaran', 
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)
               ),
             ),
           )
@@ -330,17 +344,17 @@ class _TitipViewState extends State<TitipView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Pilih Layanan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
+          const Text('Pilihan Kendaraan Mai-Titip', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
           
           // Vehicle Options List
           SizedBox(
-            height: 155,
+            height: 140,
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  Obx(() => _buildVehicleOption('mai_titip_motor', 'Mai-Titip Motor', Icons.two_wheeler, 'Belanja max Rp 300rb')),
-                  Obx(() => _buildVehicleOption('mai_titip_mobil', 'Mai-Titip Mobil', Icons.directions_car, 'Belanja max Rp 1jt')),
+                  Obx(() => _buildVehicleOption('mai_titip_motor', 'Mai-Titip Motor', Icons.two_wheeler, 'Belanjaan ringan / tas motor')),
+                  Obx(() => _buildVehicleOption('mai_titip_mobil', 'Mai-Titip Mobil', Icons.directions_car, 'Belanjaan banyak / kardus / mobil')),
                 ],
               ),
             ),
@@ -348,31 +362,43 @@ class _TitipViewState extends State<TitipView> {
           
           // Formulir Jastip
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.shade200)
+              color: Colors.teal.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.teal.shade200)
             ),
-            child: const Row(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.red),
-                SizedBox(width: 8),
-                Expanded(child: Text('Harga/Uang Belanja WAJIB dibayar TUNAI ke Driver.', style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold))),
+                Icon(Icons.info_outline, color: Colors.teal.shade800, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Driver akan membeli barang di toko memakai dana talangan. Uang belanja fisik wajib diganti TUNAI ke Driver saat pesanan tiba.',
+                    style: TextStyle(color: Colors.teal.shade900, fontSize: 11.5, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           TextField(
             onChanged: (val) => orderController.itemDescription.value = val,
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: 'Daftar Belanjaan (Contoh: Nasi Goreng Spesial 2 porsi, jangan pedas)',
-              hintStyle: const TextStyle(fontSize: 12),
-              prefixIcon: const Icon(Icons.list_alt, size: 16),
+              labelText: 'Daftar Barang Belanjaan (Wajib)',
+              labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              hintText: 'Contoh:\n1. Nasi Padang Ayam Bakar 1 bks\n2. Es Teh Manis 1 bks (jangan manis)',
+              hintStyle: const TextStyle(fontSize: 11.5),
+              prefixIcon: const Icon(Icons.shopping_bag_outlined, size: 20, color: Colors.teal),
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.teal.shade700, width: 1.8),
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -380,12 +406,19 @@ class _TitipViewState extends State<TitipView> {
             keyboardType: TextInputType.number,
             onChanged: (val) => orderController.titipItemPrice.value = double.tryParse(val) ?? 0,
             decoration: InputDecoration(
-              hintText: 'Estimasi Harga Barang (Rp)',
-              hintStyle: const TextStyle(fontSize: 12),
-              prefixIcon: const Icon(Icons.money, size: 16),
+              labelText: 'Estimasi Biaya Belanja (Wajib)',
+              labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              prefixText: 'Rp ',
+              hintText: 'Contoh: 45000',
+              hintStyle: const TextStyle(fontSize: 11.5),
+              prefixIcon: const Icon(Icons.account_balance_wallet_outlined, size: 20, color: Colors.teal),
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.teal.shade700, width: 1.8),
+              ),
             ),
           ),
 

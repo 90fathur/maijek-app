@@ -700,6 +700,32 @@ class OrderController extends GetxController {
       }
     }
 
+    // Validasi Khusus Layanan Mai-Titip
+    if (selectedVehicle.value.contains('titip')) {
+      if (itemDescription.value.trim().isEmpty) {
+        Get.snackbar(
+          'Daftar Belanja Belum Diisi 🛍️',
+          'Harap tuliskan daftar barang yang ingin Anda titip beli.',
+          backgroundColor: Colors.red.shade700,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+        );
+        return;
+      }
+      if (titipItemPrice.value <= 0) {
+        Get.snackbar(
+          'Perkiraan Harga Belanja Kosong 💵',
+          'Harap masukkan estimasi biaya belanja agar driver dapat menyiapkan dana talangan.',
+          backgroundColor: Colors.red.shade700,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+        );
+        return;
+      }
+    }
+
     isLoading.value = true;
     try {
       final rawResponse = await ApiClient.post('/user/orders/create', {

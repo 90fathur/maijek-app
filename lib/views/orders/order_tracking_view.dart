@@ -662,15 +662,17 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
                         ],
                         Flexible(
                           child: Text(
-                            trackingController.etaArrivalClock.value.isNotEmpty
-                                ? 'Tiba ~${trackingController.etaArrivalClock.value}'
-                                : (trackingController.etaRangeText.value.isNotEmpty
-                                    ? trackingController.etaRangeText.value
-                                    : serviceLabel),
-                            style: const TextStyle(
+                            trackingController.isTitipOrder && trackingController.titipStatusTitle.value.isNotEmpty
+                                ? trackingController.titipStatusTitle.value
+                                : (trackingController.etaArrivalClock.value.isNotEmpty
+                                    ? 'Tiba ~${trackingController.etaArrivalClock.value}'
+                                    : (trackingController.etaRangeText.value.isNotEmpty
+                                        ? trackingController.etaRangeText.value
+                                        : serviceLabel)),
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.primaryNavy,
+                              color: trackingController.isTitipOrder ? Colors.teal.shade800 : AppTheme.primaryNavy,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -814,10 +816,17 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
               ),
             ),
           ),
-
-          // Baris Profil Driver
-          Row(
-            children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.65,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Baris Profil Driver
+                  Row(
+                    children: [
               GestureDetector(
                 onTap: () {
                   ContactHelper.showContactModal(
@@ -1163,135 +1172,642 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
               ),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
-            child: Divider(),
-          ),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.primaryNavy.withValues(alpha: 0.08),
-                  Colors.blue.shade50,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppTheme.primaryNavy.withValues(alpha: 0.15)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.timer_outlined, color: AppTheme.primaryNavy, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        trackingController.etaTitle.value.isNotEmpty
-                            ? trackingController.etaTitle.value
-                            : (trackingController.status.value == 'accepted'
-                                ? 'Driver Menuju Lokasi Anda'
-                                : 'Dalam Perjalanan Menuju Tujuan'),
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
-                      ),
-                    ),
-                    if (trackingController.etaArrivalClock.value.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryNavy,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          trackingController.etaArrivalClock.value,
-                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                  ],
-                ),
-                if (trackingController.etaSubtitle.value.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    trackingController.etaSubtitle.value,
-                    style: TextStyle(fontSize: 12, color: Colors.blue.shade900, fontWeight: FontWeight.w500),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(),
                   ),
+
+                  // Status ETA Card
+                  _buildStatusEtaCard(),
+                  const SizedBox(height: 12),
+
+                  // JIKA MAI-TITIP: Tampilkan Stepper Tahapan, Rincian Belanjaan, Foto Struk, & Tagihan Cerdas
+                  if (trackingController.isTitipOrder) ...[
+                    _buildTitipStepTracker(),
+                    _buildTitipShoppingDetailsCard(),
+                    _buildTitipReceiptCard(context),
+                    _buildTitipPaymentCard(),
+                  ] else ...[
+                    _buildDefaultPaymentCard(driver, context),
+                  ],
                 ],
-              ],
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // KOMPONEN STATUS & ETA
+  // =========================================================================
+  Widget _buildStatusEtaCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryNavy.withValues(alpha: 0.08),
+            Colors.blue.shade50,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.primaryNavy.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.timer_outlined, color: AppTheme.primaryNavy, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  trackingController.etaTitle.value.isNotEmpty
+                      ? trackingController.etaTitle.value
+                      : (trackingController.status.value == 'accepted'
+                          ? 'Driver Menuju Lokasi Anda'
+                          : 'Dalam Perjalanan Menuju Tujuan'),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
+                ),
+              ),
+              if (trackingController.etaArrivalClock.value.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryNavy,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    trackingController.etaArrivalClock.value,
+                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+            ],
+          ),
+          if (trackingController.etaSubtitle.value.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              trackingController.etaSubtitle.value,
+              style: TextStyle(fontSize: 12, color: Colors.blue.shade900, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // STEPPER TAHAPAN JASTIP (1. Cari -> 2. Ke Toko -> 3. Belanja -> 4. Antar)
+  // =========================================================================
+  Widget _buildTitipStepTracker() {
+    final int currentStep = trackingController.titipStep.value;
+    final steps = [
+      {'step': 1, 'title': 'Cari Kurir', 'icon': Icons.search_rounded},
+      {'step': 2, 'title': 'Ke Toko', 'icon': Icons.storefront_rounded},
+      {'step': 3, 'title': 'Di Toko', 'icon': Icons.shopping_bag_rounded},
+      {'step': 4, 'title': 'Antar Belanja', 'icon': Icons.moped_rounded},
+    ];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.teal.shade50.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.teal.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'PROSES BELANJA MAI-TITIP',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.teal.shade900, letterSpacing: 0.5),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade700,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Tahap $currentStep dari 4',
+                  style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          // BADGE PEMBAYARAN & RINCIAN TARIF
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-            decoration: BoxDecoration(
-              color: trackingController.paymentMethod.value == 'maipay' ? AppTheme.primaryNavy : Colors.green.shade600,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+          Row(
+            children: steps.map((s) {
+              final int sNum = s['step'] as int;
+              final bool isDone = currentStep > sNum;
+              final bool isCurrent = currentStep == sNum;
+              final Color stepColor = isDone
+                  ? Colors.green.shade700
+                  : (isCurrent ? Colors.teal.shade800 : Colors.grey.shade400);
+
+              return Expanded(
+                child: Row(
                   children: [
-                    Icon(
-                      trackingController.paymentMethod.value == 'maipay' ? Icons.verified_user : Icons.money, 
-                      color: Colors.white, size: 18
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: isCurrent ? Colors.teal.shade700 : (isDone ? Colors.green.shade100 : Colors.white),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: stepColor, width: 2),
+                            ),
+                            child: Icon(
+                              isDone ? Icons.check : (s['icon'] as IconData),
+                              size: 16,
+                              color: isCurrent ? Colors.white : (isDone ? Colors.green.shade800 : Colors.grey.shade500),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            s['title'] as String,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                              color: stepColor,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
+                    if (sNum < 4)
+                      Container(
+                        width: 12,
+                        height: 2,
+                        color: isDone ? Colors.green.shade700 : Colors.grey.shade300,
+                      ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // KARTU DETAIL DAFTAR BELANJAAN JASTIP
+  // =========================================================================
+  Widget _buildTitipShoppingDetailsCard() {
+    final items = trackingController.parsedShoppingItems;
+    final double estBudget = trackingController.titipItemPrice.value;
+    final String rawNotes = trackingController.notes.value.trim();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.shopping_bag_outlined, color: Colors.teal.shade800, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Daftar Barang Titipan (${items.length} Item)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.teal.shade900),
+              ),
+            ],
+          ),
+          const Divider(height: 14),
+          if (items.isNotEmpty) ...[
+            ...items.map((item) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2.5),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('• ', style: TextStyle(color: Colors.teal.shade800, fontWeight: FontWeight.bold, fontSize: 13)),
+                      Expanded(
                         child: Text(
-                          trackingController.paymentMethod.value == 'maipay' ? 'LUNAS VIA MAI-PAY' : 'PEMBAYARAN TUNAI',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                          item,
+                          style: const TextStyle(fontSize: 12.5, color: Color(0xFF1E293B), fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ] else ...[
+            Text(
+              trackingController.itemDescription.value.isNotEmpty
+                  ? trackingController.itemDescription.value
+                  : 'Tidak ada daftar belanja tertulis.',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF1E293B)),
+            ),
+          ],
+          if (rawNotes.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.note_alt_outlined, size: 14, color: Colors.amber.shade900),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Catatan Anda: $rawNotes',
+                      style: TextStyle(fontSize: 11, color: Colors.amber.shade900, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.storefront, size: 15, color: Colors.teal.shade700),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Toko: ${trackingController.pickupAddress.value}',
+                  style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.home, size: 15, color: Colors.red.shade700),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Antar ke: ${trackingController.dropoffAddress.value}',
+                  style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          if (estBudget > 0) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Perkiraan Biaya Belanja:', style: TextStyle(fontSize: 11.5, color: Colors.black87)),
+                  Text(
+                    Formatter.currency(estBudget),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // KARTU BUKTI STRUK KASIR RESMI (JIKA SUDAH DIUNGGAH DRIVER)
+  // =========================================================================
+  Widget _buildTitipReceiptCard(BuildContext context) {
+    final String receiptImg = trackingController.titipReceiptImgUrl.value;
+    final double totalCost = trackingController.titipTotalCost.value;
+
+    if (receiptImg.isEmpty && totalCost <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.shade300, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.receipt_long_rounded, color: Colors.green.shade800, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'STRUK KASIR RESMI DARI TOKO',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Colors.green.shade900),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade700,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text('Sudah Dibeli ✓', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const Divider(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Total Uang Belanja Asli:', style: TextStyle(fontSize: 12.5, color: Colors.black87)),
+              Text(
+                Formatter.currency(totalCost > 0 ? totalCost : trackingController.titipItemPrice.value),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.green.shade900),
+              ),
+            ],
+          ),
+          if (receiptImg.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => Dialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                           padding: const EdgeInsets.all(12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Foto Struk Kasir Asli', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                onPressed: () => Navigator.pop(ctx),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                          child: Image.network(
+                            receiptImg,
+                            fit: BoxFit.contain,
+                            errorBuilder: (c, e, s) => const Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Text('Gagal memuat gambar struk'),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.network(
+                        receiptImg,
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => Container(
+                          width: 44,
+                          height: 44,
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.receipt, color: Colors.grey),
                         ),
                       ),
                     ),
-                  ],
-                ),
-                if (trackingController.orderPrice.value > 0) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    trackingController.paymentMethod.value == 'maipay'
-                        ? 'Total: ${Formatter.currency(trackingController.orderPrice.value)}'
-                        : 'Siapkan Tunai: ${Formatter.currency(trackingController.orderPrice.value)}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  if (trackingController.discountAmount.value > 0) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      'Hemat ${Formatter.currency(trackingController.discountAmount.value)} dengan Promo (${trackingController.promoCode.value.isNotEmpty ? trackingController.promoCode.value : "Maijek"})',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 11, fontWeight: FontWeight.w500),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Lihat Foto Struk Kasir', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                          Text('Ketuk untuk memperbesar foto struk toko', style: TextStyle(fontSize: 10.5, color: Colors.grey)),
+                        ],
+                      ),
                     ),
+                    const Icon(Icons.zoom_in, color: Colors.green, size: 20),
                   ],
-                ],
-              ],
-            ),
-          ),
-          if (trackingController.paymentMethod.value != 'maipay' &&
-              (driver != null &&
-                  (driver['driver_qris_is_active'] == 1 || driver['driver_qris_is_active'] == true) &&
-                  driver['driver_qris_image'] != null &&
-                  driver['driver_qris_image'].toString().isNotEmpty)) ...[
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _showPassengerQrisDialog(context, driver),
-                icon: const Icon(Icons.qr_code_2, color: Colors.teal),
-                label: const Text('Bayar Pakai QRIS Driver', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.teal),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
               ),
             ),
           ],
         ],
       ),
+    );
+  }
+
+  // =========================================================================
+  // RINCIAN TAGIHAN KHUSUS MAI-TITIP (ONGKIR + BELANJA TALANGAN)
+  // =========================================================================
+  Widget _buildTitipPaymentCard() {
+    final bool isMaipay = trackingController.paymentMethod.value == 'maipay';
+    final double fare = trackingController.orderPrice.value;
+    final double belanja = trackingController.titipTotalCost.value > 0
+        ? trackingController.titipTotalCost.value
+        : trackingController.titipItemPrice.value;
+    final double totalCash = isMaipay ? belanja : (fare + belanja);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isMaipay ? Colors.amber.shade50 : const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isMaipay ? Colors.amber.shade400 : Colors.green.shade300, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isMaipay ? 'TAGIHAN UANG BELANJA TUNAI' : 'TOTAL PEMBAYARAN TUNAI',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12.5,
+                        color: isMaipay ? Colors.amber.shade900 : Colors.green.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isMaipay
+                          ? 'Ongkir Lunas. Siapkan uang belanjaan tunai ke driver'
+                          : 'Siapkan uang tunai pas saat pesanan belanja tiba',
+                      style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                Formatter.currency(totalCash),
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: isMaipay ? Colors.amber.shade900 : Colors.green.shade800,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Ongkir Layanan Jastip', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700)),
+              Text(
+                isMaipay ? 'Lunas (Mai-Pay)' : Formatter.currency(fare),
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.bold,
+                  color: isMaipay ? Colors.blue.shade800 : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Uang Belanja Struk', style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700)),
+              Text(
+                Formatter.currency(belanja),
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.teal.shade800),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // RINCIAN PEMBAYARAN DEFAULT (MAIRIDE / MAICAR / MAISEND)
+  // =========================================================================
+  Widget _buildDefaultPaymentCard(dynamic driver, BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+          decoration: BoxDecoration(
+            color: trackingController.paymentMethod.value == 'maipay' ? AppTheme.primaryNavy : Colors.green.shade600,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    trackingController.paymentMethod.value == 'maipay' ? Icons.verified_user : Icons.money, 
+                    color: Colors.white, size: 18
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        trackingController.paymentMethod.value == 'maipay' ? 'LUNAS VIA MAI-PAY' : 'PEMBAYARAN TUNAI',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (trackingController.orderPrice.value > 0) ...[
+                const SizedBox(height: 6),
+                Text(
+                  trackingController.paymentMethod.value == 'maipay'
+                      ? 'Total: ${Formatter.currency(trackingController.orderPrice.value)}'
+                      : 'Siapkan Tunai: ${Formatter.currency(trackingController.orderPrice.value)}',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                if (trackingController.discountAmount.value > 0) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Hemat ${Formatter.currency(trackingController.discountAmount.value)} dengan Promo (${trackingController.promoCode.value.isNotEmpty ? trackingController.promoCode.value : "Maijek"})',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 11, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+        if (trackingController.paymentMethod.value != 'maipay' &&
+            (driver != null &&
+                (driver['driver_qris_is_active'] == 1 || driver['driver_qris_is_active'] == true) &&
+                driver['driver_qris_image'] != null &&
+                driver['driver_qris_image'].toString().isNotEmpty)) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _showPassengerQrisDialog(context, driver),
+              icon: const Icon(Icons.qr_code_2, color: Colors.teal),
+              label: const Text('Bayar Pakai QRIS Driver', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.teal),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
