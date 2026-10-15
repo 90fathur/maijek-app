@@ -736,6 +736,7 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                       orderId: order['id'].toString(),
                       driverName: order['driver_name'] ?? 'Driver',
                       driverPhoto: order['driver_photo'],
+                      isFood: true,
                       driverPhone: order['driver_phone'],
                     ));
                   },
@@ -1061,6 +1062,7 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                                         orderId: order['id'].toString(),
                                         driverName: order['driver_name'] ?? 'Driver',
                                         driverPhoto: order['driver_photo'],
+                                        isFood: true,
                                         driverPhone: order['driver_phone'],
                                       ));
                                     },
@@ -1083,6 +1085,7 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                                       orderId: order['id'].toString(),
                                       driverName: order['driver_name'] ?? 'Driver',
                                       driverPhoto: order['driver_photo'],
+                                      isFood: true,
                                       driverPhone: order['driver_phone'],
                                     ));
                                   },

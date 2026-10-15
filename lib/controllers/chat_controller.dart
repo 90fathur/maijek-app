@@ -8,8 +8,18 @@ class ChatMessage {
   final String text;
   final bool isMe;
   final DateTime time;
+  final String? senderType;
+  final String? senderName;
+  final String? senderRoleLabel;
 
-  ChatMessage({required this.text, required this.isMe, required this.time});
+  ChatMessage({
+    required this.text,
+    required this.isMe,
+    required this.time,
+    this.senderType,
+    this.senderName,
+    this.senderRoleLabel,
+  });
 }
 
 class ChatController extends GetxController {
@@ -59,6 +69,9 @@ class ChatController extends GetxController {
               text: msg['message'],
               isMe: msg['sender_type'] == senderType,
               time: DateTime.parse(msg['created_at']),
+              senderType: msg['sender_type'],
+              senderName: msg['sender_name'],
+              senderRoleLabel: msg['sender_role_label'],
             ));
           }
           messages.value = newMessages;

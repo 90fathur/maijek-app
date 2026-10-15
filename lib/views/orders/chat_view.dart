@@ -250,6 +250,39 @@ class ChatView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: msg.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
+            if (!msg.isMe && isFood) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                decoration: BoxDecoration(
+                  color: msg.senderType == 'merchant' ? Colors.orange.shade50 : Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: msg.senderType == 'merchant' ? Colors.orange.shade300 : Colors.blue.shade300,
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      msg.senderType == 'merchant' ? Icons.storefront : Icons.two_wheeler,
+                      size: 11,
+                      color: msg.senderType == 'merchant' ? Colors.orange.shade900 : Colors.blue.shade900,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      msg.senderRoleLabel ?? (msg.senderType == 'merchant' ? 'Restoran / Toko' : 'Kurir Driver'),
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                        color: msg.senderType == 'merchant' ? Colors.orange.shade900 : Colors.blue.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             Text(
               msg.text,
               style: TextStyle(
