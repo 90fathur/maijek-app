@@ -1164,8 +1164,9 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                     _buildPaymentStatusCard(order),
                   ],
 
-                  // 🚫 Tombol Batalkan Pesanan Mai-Food
-                  if (['pending', 'accepted_by_merchant', 'processing', 'ready'].contains(order['status'])) ...[
+                  // 🚫 Tombol Batalkan Pesanan Mai-Food / MaiMart
+                  // Hanya dapat dibatalkan jika resto/toko BELUM mengonfirmasi pesanan (masih 'pending')
+                  if (order['status'] == 'pending') ...[
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -1182,6 +1183,35 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                           backgroundColor: Colors.red.shade50.withOpacity(0.5),
                         ),
                         onPressed: () => _showCancelModal(context, order),
+                      ),
+                    ),
+                  ] else if (['accepted_by_merchant', 'processing', 'ready'].contains(order['status'])) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.lock_clock, size: 18, color: Colors.orange.shade800),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isMart
+                                  ? 'Pesanan sudah dikonfirmasi toko & tidak dapat dibatalkan.'
+                                  : 'Pesanan sudah dikonfirmasi restoran & tidak dapat dibatalkan.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.orange.shade900,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1251,6 +1281,19 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
   }
 
   void _showCancelModal(BuildContext context, dynamic order) {
+    if (order['status'] != 'pending') {
+      bool isMart = (order['order_type'] ?? '').toString().toLowerCase() == 'mart';
+      Get.snackbar(
+        'Tidak Dapat Dibatalkan',
+        isMart
+            ? 'Pesanan sudah dikonfirmasi oleh toko dan tidak dapat dibatalkan.'
+            : 'Pesanan sudah dikonfirmasi oleh restoran dan tidak dapat dibatalkan.',
+        backgroundColor: Colors.orange.shade800,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     Get.bottomSheet(
       Container(
         padding: const EdgeInsets.all(24),

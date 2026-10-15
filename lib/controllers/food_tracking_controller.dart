@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../core/api_client.dart';
-import '../core/map_style.dart';
 import 'auth_controller.dart';
 import 'home_controller.dart';
 
@@ -560,6 +559,20 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
   }
 
   Future<void> cancelOrder(String reason) async {
+    final String currentStatus = (orderData['status'] ?? '').toString();
+    if (currentStatus.isNotEmpty && currentStatus != 'pending') {
+      bool isMart = (orderData['order_type'] ?? '').toString().toLowerCase() == 'mart';
+      Get.snackbar(
+        'Tidak Dapat Dibatalkan',
+        isMart
+            ? 'Pesanan sudah dikonfirmasi oleh toko dan tidak dapat dibatalkan.'
+            : 'Pesanan sudah dikonfirmasi oleh restoran dan tidak dapat dibatalkan.',
+        backgroundColor: Colors.orange.shade800,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     int? targetId = orderId ?? (orderData['id'] != null ? int.tryParse(orderData['id'].toString()) : null);
     
     if (targetId == null) {
