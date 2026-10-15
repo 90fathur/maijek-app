@@ -133,6 +133,36 @@ class _LocationSearchViewState extends State<LocationSearchView> {
             ),
           ),
           
+          // Action: Pilih / Geser Titik di Peta
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.map_outlined, color: AppTheme.primaryBlue, size: 20),
+              label: Text(
+                _isPickup ? 'Pilih / Geser Titik Jemput di Peta' : 'Pilih / Geser Lokasi Tujuan di Peta',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: AppTheme.primaryBlue),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: const BorderSide(color: AppTheme.primaryBlue, width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                backgroundColor: AppTheme.primaryBlue.withOpacity(0.04),
+              ),
+              onPressed: () async {
+                final result = await Get.to(() => MapPickerView(
+                  initialPosition: _isPickup 
+                      ? orderController.pickupLocation.value 
+                      : (orderController.dropoffLocation.value.latitude != 0 ? orderController.dropoffLocation.value : orderController.pickupLocation.value),
+                  title: _isPickup ? 'Tentukan Titik Jemput' : 'Tentukan Lokasi Tujuan',
+                ));
+                if (result != null && result is Map) {
+                  Get.back(result: result);
+                }
+              },
+            ),
+          ),
+          
           // Loading Indicator
           if (_isLoading)
             const Padding(
@@ -191,6 +221,39 @@ class _LocationSearchViewState extends State<LocationSearchView> {
                     prediction['structured_formatting']['secondary_text'] ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: InkWell(
+                    onTap: () async {
+                      setState(() => _isLoading = true);
+                      var latLng = await orderController.getPlaceDetails(prediction['place_id']);
+                      setState(() => _isLoading = false);
+                      if (latLng != null) {
+                        final result = await Get.to(() => MapPickerView(
+                          initialPosition: latLng,
+                          initialAddress: prediction['description'],
+                          title: 'Geser Titik di Peta',
+                        ));
+                        if (result != null && result is Map) {
+                          Get.back(result: result);
+                        }
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryBlue.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.touch_app, size: 14, color: AppTheme.primaryBlue),
+                          SizedBox(width: 4),
+                          Text('Geser', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                        ],
+                      ),
+                    ),
                   ),
                   onTap: () => _onPlaceSelected(prediction['place_id'], prediction['description']),
                 );

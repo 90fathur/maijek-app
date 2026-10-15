@@ -567,8 +567,22 @@ class OrderController extends GetxController {
     markers[MarkerId(id)] = Marker(
       markerId: MarkerId(id),
       position: loc,
-      infoWindow: InfoWindow(title: title),
+      infoWindow: InfoWindow(title: '$title (Tahan & geser untuk sesuaikan)'),
       icon: icon,
+      draggable: true,
+      onDragEnd: (newLoc) async {
+        if (id == 'pickup') {
+          pickupLocation.value = newLoc;
+          pickupAddress.value = await _getAddressFromLatLng(newLoc);
+          if (dropoffLocation.value.latitude != 0) {
+            calculateRoute();
+          }
+        } else if (id == 'dropoff') {
+          dropoffLocation.value = newLoc;
+          dropoffAddress.value = await _getAddressFromLatLng(newLoc);
+          calculateRoute();
+        }
+      },
     );
   }
 

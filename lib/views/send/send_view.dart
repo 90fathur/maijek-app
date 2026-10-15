@@ -9,6 +9,7 @@ import '../../controllers/auth_controller.dart';
 import '../promo/promo_modal.dart';
 import '../../controllers/order_controller.dart';
 import '../home/location_search_view.dart';
+import '../home/map_picker_view.dart';
 import '../wallet/topup_view.dart';
 import '../wallet/insufficient_balance_sheet.dart';
 
@@ -219,7 +220,7 @@ class _SendViewState extends State<SendView> {
                       mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 15));
                     }
                   },
-                  child: Row(
+                    child: Row(
                     children: [
                       Icon(Icons.trip_origin, color: isPickup ? AppTheme.primaryBlue : Colors.grey, size: 20),
                       const SizedBox(width: 12),
@@ -239,6 +240,23 @@ class _SendViewState extends State<SendView> {
                             ),
                           ],
                         ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.map_outlined, color: AppTheme.primaryBlue, size: 20),
+                        tooltip: 'Geser titik di peta',
+                        onPressed: () async {
+                          final result = await Get.to(() => MapPickerView(
+                            initialPosition: orderController.pickupLocation.value,
+                            initialAddress: orderController.pickupAddress.value,
+                            title: 'Tentukan Titik Pengambilan Paket',
+                          ));
+                          if (result != null && result is Map) {
+                            orderController.pickupLocation.value = result['latLng'];
+                            orderController.pickupAddress.value = result['address'];
+                            orderController.currentState.value = OrderState.selectingDropoff;
+                            mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 16));
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -283,6 +301,24 @@ class _SendViewState extends State<SendView> {
                             ),
                           ],
                         ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.map_outlined, color: Colors.red, size: 20),
+                        tooltip: 'Geser tujuan di peta',
+                        onPressed: () async {
+                          final result = await Get.to(() => MapPickerView(
+                            initialPosition: orderController.dropoffLocation.value.latitude != 0 
+                                ? orderController.dropoffLocation.value 
+                                : orderController.pickupLocation.value,
+                            initialAddress: orderController.dropoffAddress.value,
+                            title: 'Tentukan Lokasi Tujuan Pengantaran',
+                          ));
+                          if (result != null && result is Map) {
+                            orderController.dropoffLocation.value = result['latLng'];
+                            orderController.dropoffAddress.value = result['address'];
+                            orderController.calculateRoute();
+                          }
+                        },
                       ),
                     ],
                   ),

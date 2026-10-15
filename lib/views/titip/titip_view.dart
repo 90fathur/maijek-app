@@ -9,6 +9,7 @@ import '../../controllers/auth_controller.dart';
 import '../promo/promo_modal.dart';
 import '../../controllers/order_controller.dart';
 import '../home/location_search_view.dart';
+import '../home/map_picker_view.dart';
 import '../wallet/topup_view.dart';
 import '../wallet/insufficient_balance_sheet.dart';
 
@@ -220,7 +221,7 @@ class _TitipViewState extends State<TitipView> {
                       mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 15));
                     }
                   },
-                  child: Row(
+                    child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(6),
@@ -247,6 +248,23 @@ class _TitipViewState extends State<TitipView> {
                             ),
                           ],
                         ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.map_outlined, color: Colors.teal.shade700, size: 20),
+                        tooltip: 'Geser titik toko di peta',
+                        onPressed: () async {
+                          final result = await Get.to(() => MapPickerView(
+                            initialPosition: orderController.pickupLocation.value,
+                            initialAddress: orderController.pickupAddress.value,
+                            title: 'Tentukan Titik Toko / Belanja',
+                          ));
+                          if (result != null && result is Map) {
+                            orderController.pickupLocation.value = result['latLng'];
+                            orderController.pickupAddress.value = result['address'];
+                            orderController.currentState.value = OrderState.selectingDropoff;
+                            mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 16));
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -288,7 +306,7 @@ class _TitipViewState extends State<TitipView> {
                           children: [
                             const Text('Alamat Pengantaran Belanja', style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted, fontWeight: FontWeight.w600)),
                             Text(
-                              orderController.dropoffAddress.value.isEmpty ? 'Ketik alamat rumah / pengantaran...' : orderController.dropoffAddress.value,
+                              orderController.dropoffAddress.value.isEmpty ? 'Ketik alamat rumah pengantaran...' : orderController.dropoffAddress.value,
                               style: TextStyle(
                                 fontSize: 13.5, 
                                 fontWeight: !isPickup ? FontWeight.bold : FontWeight.normal,
@@ -298,6 +316,24 @@ class _TitipViewState extends State<TitipView> {
                             ),
                           ],
                         ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.map_outlined, color: Colors.red, size: 20),
+                        tooltip: 'Geser tujuan di peta',
+                        onPressed: () async {
+                          final result = await Get.to(() => MapPickerView(
+                            initialPosition: orderController.dropoffLocation.value.latitude != 0 
+                                ? orderController.dropoffLocation.value 
+                                : orderController.pickupLocation.value,
+                            initialAddress: orderController.dropoffAddress.value,
+                            title: 'Tentukan Alamat Rumah Pengantaran',
+                          ));
+                          if (result != null && result is Map) {
+                            orderController.dropoffLocation.value = result['latLng'];
+                            orderController.dropoffAddress.value = result['address'];
+                            orderController.calculateRoute();
+                          }
+                        },
                       ),
                     ],
                   ),
