@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../controllers/food_controller.dart';
 import '../../core/theme.dart';
+import '../../core/contact_helper.dart';
 import 'checkout_view.dart';
 
 class MerchantDetailView extends StatelessWidget {
@@ -57,6 +58,9 @@ class MerchantDetailView extends StatelessWidget {
                       ],
                     ),
                   ],
+                  const SizedBox(height: 12),
+                  // Live Kasir Status Card
+                  _buildLiveKasirStatusCard(context, merchant),
                 ],
               ),
             ),
@@ -396,5 +400,131 @@ class MerchantDetailView extends StatelessWidget {
         );
       },
     );
+  }
+
+  Widget _buildLiveKasirStatusCard(BuildContext context, Map merchant) {
+    bool isLive = merchant['is_live_kasir'] == true;
+    String merchantPhone = merchant['phone']?.toString() ?? '';
+    String merchantName = merchant['name']?.toString() ?? 'Restoran';
+
+    if (isLive) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: const Color(0xFFECFDF5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFA7F3D0), width: 1.2),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: const BoxDecoration(
+                color: Color(0xFF10B981),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 11),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '🟢 Kasir Resto Sedang Live & Siap',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF065F46),
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Mitra aktif di aplikasi kasir. Pesanan Anda akan langsung diproses & dimasak tanpa tertunda.',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF047857), height: 1.25),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFBEB),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade700,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 16),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '⚠️ Kasir Belum Terpantau Live di Aplikasi',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade900,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Resto buka jam operasional, namun kasir belum aktif di aplikasi dalam beberapa menit terakhir. Pesanan berisiko menunggu lebih lama.',
+                        style: TextStyle(fontSize: 11, color: Colors.brown.shade800, height: 1.25),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (merchantPhone.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    ContactHelper.openWhatsApp(
+                      phone: merchantPhone,
+                      name: merchantName,
+                      customMessage: 'Halo $merchantName, saya ingin pesan makanan lewat aplikasi MaiFood. Apakah kasir sedang standby dan siap menerima pesanan sekarang?',
+                    );
+                  },
+                  icon: const Icon(Icons.chat_bubble_outline, size: 14, color: Color(0xFF047857)),
+                  label: const Text(
+                    'Tanya Kesiapan Kasir via WhatsApp',
+                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF065F46)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFF6EE7B7)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
   }
 }

@@ -152,24 +152,33 @@ class MerchantsView extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (merchant['photo'] != null && merchant['photo'].toString().isNotEmpty)
-                              Image.network(
-                                merchant['photo'],
-                                height: 150,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  height: 150,
-                                  color: Colors.grey[200],
-                                  child: const Icon(Icons.restaurant, size: 50, color: Colors.grey),
+                            Stack(
+                              children: [
+                                if (merchant['photo'] != null && merchant['photo'].toString().isNotEmpty)
+                                  Image.network(
+                                    merchant['photo'],
+                                    height: 150,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      height: 150,
+                                      color: Colors.grey[200],
+                                      child: const Icon(Icons.restaurant, size: 50, color: Colors.grey),
+                                    ),
+                                  )
+                                else
+                                  Container(
+                                    height: 150,
+                                    color: Colors.grey[200],
+                                    child: const Center(child: Icon(Icons.restaurant, size: 50, color: Colors.grey)),
+                                  ),
+                                Positioned(
+                                  top: 10,
+                                  left: 10,
+                                  child: _buildKasirBadge(merchant),
                                 ),
-                              )
-                            else
-                              Container(
-                                height: 150,
-                                color: Colors.grey[200],
-                                child: const Center(child: Icon(Icons.restaurant, size: 50, color: Colors.grey)),
-                              ),
+                              ],
+                            ),
                             Padding(
                               padding: const EdgeInsets.all(14.0),
                               child: Column(
@@ -198,6 +207,32 @@ class MerchantsView extends StatelessWidget {
                                             style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 11),
                                           ),
                                         ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 5),
+                                  // Live Kasir Subtitle
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        merchant['is_live_kasir'] == true ? Icons.check_circle : Icons.schedule,
+                                        size: 13,
+                                        color: merchant['is_live_kasir'] == true ? Colors.green.shade700 : Colors.orange.shade800,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          merchant['is_live_kasir'] == true
+                                              ? 'Kasir aktif & siap memproses pesanan'
+                                              : 'Buka jam operasional (Kasir standby)',
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: merchant['is_live_kasir'] == true ? Colors.green.shade800 : Colors.orange.shade900,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 4),
@@ -551,5 +586,79 @@ class MerchantsView extends StatelessWidget {
         const SizedBox(height: 12),
       ],
     );
+  }
+
+  Widget _buildKasirBadge(Map merchant) {
+    bool isLive = merchant['is_live_kasir'] == true;
+
+    if (isLive) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF059669),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 5),
+            const Text(
+              'LIVE KASIR • SIAP TERIMA PESANAN',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade900.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.schedule, size: 11, color: Colors.white),
+            SizedBox(width: 4),
+            Text(
+              'Kasir Standby',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 9.5,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }

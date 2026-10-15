@@ -6,6 +6,7 @@ import '../../controllers/food_controller.dart';
 import '../../controllers/home_controller.dart';
 import '../../controllers/auth_controller.dart';
 import '../../core/theme.dart';
+import '../../core/contact_helper.dart';
 import '../wallet/topup_view.dart';
 import '../wallet/insufficient_balance_sheet.dart';
 
@@ -820,59 +821,74 @@ class CheckoutView extends StatelessWidget {
                 boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))],
               ),
               child: SafeArea(
-                child: ElevatedButton(
-                  onPressed: controller.isLoading.value
-                      ? null
-                      : () async {
-                          final authController = Get.find<AuthController>();
-                          if (!authController.isLogged.value) {
-                            Get.toNamed('/login');
-                            Get.snackbar(
-                              'Perlu Masuk',
-                              'Silakan masuk atau daftar terlebih dahulu untuk melanjutkan pesanan',
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: Colors.black87,
-                              colorText: Colors.white,
-                              margin: const EdgeInsets.all(16),
-                            );
-                            return;
-                          }
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildCheckoutKasirIndicator(context),
+                    ElevatedButton(
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : () async {
+                              final authController = Get.find<AuthController>();
+                              if (!authController.isLogged.value) {
+                                Get.toNamed('/login');
+                                Get.snackbar(
+                                  'Perlu Masuk',
+                                  'Silakan masuk atau daftar terlebih dahulu untuk melanjutkan pesanan',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.black87,
+                                  colorText: Colors.white,
+                                  margin: const EdgeInsets.all(16),
+                                );
+                                return;
+                              }
 
-                          if (controller.deliveryAddress.value.isEmpty || controller.deliveryAddress.value == "Pilih Lokasi Pengantaran...") {
-                            Get.snackbar('Error', 'Silakan pilih titik koordinat pengantaran');
-                            return;
-                          }
+                              if (controller.deliveryAddress.value.isEmpty || controller.deliveryAddress.value == "Pilih Lokasi Pengantaran...") {
+                                Get.snackbar('Error', 'Silakan pilih titik koordinat pengantaran');
+                                return;
+                              }
 
-                          String finalAddress = controller.deliveryAddress.value;
-                          if (detailController.text.trim().isNotEmpty) {
-                            finalAddress += " (Detail: ${detailController.text.trim()})";
-                          }
+                              String finalAddress = controller.deliveryAddress.value;
+                              if (detailController.text.trim().isNotEmpty) {
+                                finalAddress += " (Detail: ${detailController.text.trim()})";
+                              }
 
-                          await controller.checkoutOrder(
-                            finalAddress,
-                            controller.deliveryLat.value,
-                            controller.deliveryLng.value,
-                            controller.deliveryDistance.value,
-                            controller.paymentMethod.value,
-                          );
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: controller.selectedVehicleType.value == 'mobil' ? AppTheme.primaryBlue : Colors.orange.shade800,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: controller.isLoading.value
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(controller.selectedVehicleType.value == 'mobil' ? Icons.directions_car : Icons.two_wheeler, size: 20),
-                            const SizedBox(width: 8),
-                            Text('Pesan dengan Kurir ${controller.selectedVehicleType.value == 'mobil' ? 'Mobil' : 'Motor'}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
+                              void doSubmit() async {
+                                await controller.checkoutOrder(
+                                  finalAddress,
+                                  controller.deliveryLat.value,
+                                  controller.deliveryLng.value,
+                                  controller.deliveryDistance.value,
+                                  controller.paymentMethod.value,
+                                );
+                              }
+
+                              // Cek jika kasir resto belum terpantau live, tampilkan peringatan konfirmasi sebelum pesan!
+                              if (controller.merchantDetail['is_live_kasir'] != true) {
+                                _showKasirInactiveWarningModal(context, doSubmit);
+                              } else {
+                                doSubmit();
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: controller.selectedVehicleType.value == 'mobil' ? AppTheme.primaryBlue : Colors.orange.shade800,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: controller.isLoading.value
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(controller.selectedVehicleType.value == 'mobil' ? Icons.directions_car : Icons.two_wheeler, size: 20),
+                                const SizedBox(width: 8),
+                                Text('Pesan dengan Kurir ${controller.selectedVehicleType.value == 'mobil' ? 'Mobil' : 'Motor'}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                    ),
+                  ],
                 ),
               ),
             )
@@ -1013,6 +1029,206 @@ class CheckoutView extends StatelessWidget {
               ],
             ],
           ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildCheckoutKasirIndicator(BuildContext context) {
+    return Obx(() {
+      final merchant = controller.merchantDetail;
+      bool isLive = merchant['is_live_kasir'] == true;
+
+      if (isLive) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFECFDF5),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFA7F3D0)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '🟢 Kasir Resto Live & Siap Memproses Pesanan',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF065F46),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFBEB),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFFDE68A)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '⚠️ Kasir Belum Terpantau Live di Aplikasi',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    'Pesanan berisiko menunggu lebih lama jika kasir tidak standby.',
+                    style: TextStyle(fontSize: 10.5, color: Colors.brown.shade800),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  void _showKasirInactiveWarningModal(BuildContext context, VoidCallback onConfirmProceed) {
+    final merchant = controller.merchantDetail;
+    String merchantName = merchant['name']?.toString() ?? 'Restoran';
+    String merchantPhone = merchant['phone']?.toString() ?? '';
+
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.warning_rounded, color: Colors.orange.shade900, size: 26),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Peringatan Kasir Resto',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Kasir belum terpantau aktif online',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Text(
+                'Aplikasi kasir $merchantName belum terpantau aktif membuka pesanan dalam beberapa menit terakhir. Pesanan mungkin membutuhkan waktu respon lebih lama atau tertunda.',
+                style: TextStyle(fontSize: 12.5, color: Colors.brown.shade900, height: 1.35),
+              ),
+            ),
+            const SizedBox(height: 18),
+            if (merchantPhone.isNotEmpty) ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Get.back();
+                    ContactHelper.openWhatsApp(
+                      phone: merchantPhone,
+                      name: merchantName,
+                      customMessage: 'Halo $merchantName, saya ingin pesan makanan via aplikasi MaiFood. Apakah kasir sedang standby dan siap proses pesanan sekarang?',
+                    );
+                  },
+                  icon: const Icon(Icons.chat_bubble, size: 16, color: Color(0xFF047857)),
+                  label: const Text(
+                    'Hubungi Resto via WhatsApp Dulu',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF065F46)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: const Color(0xFFECFDF5),
+                    side: const BorderSide(color: Color(0xFF6EE7B7)),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Get.back();
+                  onConfirmProceed();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text(
+                  'Tetap Lanjutkan Pesanan',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Center(
+              child: TextButton(
+                onPressed: () => Get.back(),
+                child: Text('Kembali', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+              ),
+            ),
+          ],
         ),
       ),
       isScrollControlled: true,

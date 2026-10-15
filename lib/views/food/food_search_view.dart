@@ -515,6 +515,18 @@ class _FoodSearchViewState extends State<FoodSearchView> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (menu['is_live_kasir'] == true) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.green.shade300, width: 0.7),
+                              ),
+                              child: const Text('Live Kasir', style: TextStyle(color: Color(0xFF047857), fontSize: 9.5, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
                           if (menu['distance'] != null) ...[
                             const SizedBox(width: 4),
                             Text(
@@ -980,11 +992,51 @@ class _FoodSearchViewState extends State<FoodSearchView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      merchant['name'] ?? 'Restoran',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            merchant['name'] ?? 'Restoran',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: merchant['is_live_kasir'] == true ? const Color(0xFFECFDF5) : const Color(0xFFFFFBEB),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: merchant['is_live_kasir'] == true ? const Color(0xFFA7F3D0) : const Color(0xFFFDE68A),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5.5,
+                                height: 5.5,
+                                decoration: BoxDecoration(
+                                  color: merchant['is_live_kasir'] == true ? const Color(0xFF10B981) : Colors.orange.shade800,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                merchant['is_live_kasir'] == true ? 'Live Kasir' : 'Standby',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: merchant['is_live_kasir'] == true ? const Color(0xFF065F46) : Colors.orange.shade900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
