@@ -12,6 +12,7 @@ import '../home/location_search_view.dart';
 import '../home/map_picker_view.dart';
 import '../wallet/topup_view.dart';
 import '../wallet/insufficient_balance_sheet.dart';
+import 'titip_places_modal.dart';
 
 class TitipView extends StatefulWidget {
   const TitipView({super.key});
@@ -86,6 +87,44 @@ class _TitipViewState extends State<TitipView> {
         bounds = LatLngBounds(southwest: orderController.pickupLocation.value, northeast: orderController.dropoffLocation.value);
       }
       mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
+    }
+  }
+
+  Future<void> _openTitipPlacesModal() async {
+    final result = await TitipPlacesModal.show(
+      context,
+      userLocation: orderController.pickupLocation.value.latitude != 0
+          ? orderController.pickupLocation.value
+          : null,
+    );
+
+    if (result != null && result['latLng'] != null) {
+      final LatLng loc = result['latLng'];
+      final String fullAddr = result['fullAddress'] ?? '${result['name']} - ${result['address']}';
+
+      orderController.pickupLocation.value = loc;
+      orderController.pickupAddress.value = fullAddr;
+      orderController.currentState.value = OrderState.selectingDropoff;
+
+      // Geser kamera peta langsung ke titik koordinat tempat tersebut
+      mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 16));
+
+      // Jika alamat pengantaran sudah ada, kalkulasi rute langsung
+      if (orderController.dropoffLocation.value.latitude != 0) {
+        orderController.calculateRoute();
+      }
+
+      Get.snackbar(
+        'Lokasi Toko Dipilih',
+        result['name'] ?? 'Titik toko berhasil diarahkan ke lokasi pilihan.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.teal.shade800,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.all(12),
+        borderRadius: 10,
+        icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+      );
     }
   }
 
@@ -250,6 +289,11 @@ class _TitipViewState extends State<TitipView> {
                         ),
                       ),
                       IconButton(
+                        icon: const Icon(Icons.stars_rounded, color: Colors.amber, size: 22),
+                        tooltip: 'Pilih dari tempat populer / favorit',
+                        onPressed: _openTitipPlacesModal,
+                      ),
+                      IconButton(
                         icon: Icon(Icons.map_outlined, color: Colors.teal.shade700, size: 20),
                         tooltip: 'Geser titik toko di peta',
                         onPressed: () async {
@@ -341,6 +385,82 @@ class _TitipViewState extends State<TitipView> {
               ],
             ),
           ),
+          
+          // Tombol Pilih Tempat Populer / Favorit (Non-Mitra)
+          if (isPickup) ...[
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: _openTitipPlacesModal,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFFBEB), Color(0xFFFEF3C7)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFD97706).withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF59E0B),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.stars_rounded, color: Colors.white, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                'Pilih Dari Tempat Populer',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF92400E),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD97706),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'Tikor Pas',
+                                  style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Pasar, toko, apotek, dll tanpa repot cari titik koordinat',
+                            style: TextStyle(fontSize: 11, color: Color(0xFFB45309)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded, color: Color(0xFFB45309), size: 20),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           
           // Action Button
