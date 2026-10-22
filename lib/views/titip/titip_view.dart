@@ -720,6 +720,17 @@ class _TitipViewState extends State<TitipView> {
                             ),
                             const Divider(),
                             ListTile(
+                              leading: Icon(Icons.qr_code_2_rounded, color: Colors.indigo.shade700),
+                              title: const Text('QRIS Instan', style: TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: const Text('BCA, Mandiri, BRI, BNI, GoPay, OVO, Dana, dll', style: TextStyle(fontSize: 11)),
+                              trailing: Obx(() => orderController.paymentMethod.value == 'qris' ? const Icon(Icons.check_circle, color: Colors.green) : const SizedBox()),
+                              onTap: () {
+                                orderController.paymentMethod.value = 'qris';
+                                Get.back();
+                              },
+                            ),
+                            const Divider(),
+                            ListTile(
                               leading: Icon(Icons.money, color: Colors.green.shade600),
                               title: const Text('Tunai', style: TextStyle(fontWeight: FontWeight.bold)),
                               trailing: Obx(() => orderController.paymentMethod.value == 'cash' ? const Icon(Icons.check_circle, color: Colors.green) : const SizedBox()),
@@ -734,20 +745,26 @@ class _TitipViewState extends State<TitipView> {
                     );
                   },
                   child: Obx(() {
-                    final isCash = orderController.paymentMethod.value == 'cash';
+                    final pm = orderController.paymentMethod.value;
+                    final isCash = pm == 'cash';
+                    final isQris = pm == 'qris';
                     final bal = double.tryParse(authController.userData['balance']?.toString() ?? '0') ?? 0;
                     final orderPrice = orderController.price.value.toDouble();
-                    final isShort = !isCash && bal < orderPrice;
+                    final isShort = pm == 'maipay' && bal < orderPrice;
 
                     return Row(
                       children: [
                         Icon(
-                          isCash ? Icons.money : Icons.account_balance_wallet, 
-                          color: isCash ? Colors.green.shade600 : Colors.blue,
+                          isQris 
+                              ? Icons.qr_code_2_rounded 
+                              : (isCash ? Icons.money : Icons.account_balance_wallet), 
+                          color: isQris 
+                              ? Colors.indigo.shade700 
+                              : (isCash ? Colors.green.shade600 : Colors.blue),
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          isCash ? 'Tunai' : 'Mai-Pay', 
+                          isQris ? 'QRIS' : (isCash ? 'Tunai' : 'Mai-Pay'), 
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         if (isShort) ...[

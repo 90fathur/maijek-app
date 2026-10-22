@@ -11,6 +11,7 @@ import '../../core/api_client.dart';
 import '../../core/contact_helper.dart';
 import '../../core/utils.dart';
 import 'merchants_view.dart';
+import '../wallet/qris_payment_sheet.dart';
 
 class FoodTrackingView extends StatefulWidget {
   const FoodTrackingView({super.key});
@@ -1423,6 +1424,82 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                 ],
               ),
             ),
+          ],
+        ),
+      );
+    } else if (paymentMethod == 'qris') {
+      final bool isPaid = (order['payment_status'] ?? 'paid') == 'paid';
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isPaid ? Colors.indigo.shade50 : Colors.deepOrange.shade50,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: isPaid ? Colors.indigo.shade200 : Colors.deepOrange.shade300),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isPaid ? Icons.check_circle_rounded : Icons.qr_code_2_rounded,
+                  color: isPaid ? Colors.indigo.shade700 : Colors.deepOrange,
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isPaid
+                            ? 'Lunas via QRIS (${Formatter.currency(totalPrice)})'
+                            : 'Menunggu Pembayaran QRIS (${Formatter.currency(totalPrice)})',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: isPaid ? Colors.indigo.shade800 : Colors.deepOrange.shade900,
+                        ),
+                      ),
+                      Text(
+                        isPaid
+                            ? 'Anda tidak perlu membayar tunai apapun ke driver.'
+                            : 'Silakan scan & selesaikan pembayaran agar pesanan diproses.',
+                        style: const TextStyle(fontSize: 11.5, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (!isPaid && order['qris_ref'] != null) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    QrisPaymentSheet.show(
+                      context: context,
+                      orderRef: order['qris_ref'].toString(),
+                      amount: totalPrice,
+                      qrisPayload: order['qris_payload']?.toString(),
+                      qrisImageBase64: (order['qris_image_base64'] ?? '').toString().replaceFirst('data:image/png;base64,', ''),
+                      checkEndpoint: '/user/food/checkQrisStatus/${order['id']}',
+                      onSuccess: () {
+                        Get.find<FoodTrackingController>().fetchOrderStatus();
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.qr_code_scanner, size: 16),
+                  label: const Text('Bayar QRIS Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepOrange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       );

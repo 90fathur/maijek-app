@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/theme.dart';
 import '../../core/utils.dart';
+import '../../core/api_client.dart';
 import '../../controllers/wallet_controller.dart';
+import '../../controllers/auth_controller.dart';
+import 'qris_payment_sheet.dart';
 
 class TopUpView extends StatefulWidget {
   final int? initialAmount;
@@ -16,6 +20,7 @@ class _TopUpViewState extends State<TopUpView> {
   int selectedAmount = 0;
   final TextEditingController amountController = TextEditingController();
   final walletController = Get.find<WalletController>();
+  bool isLoadingQris = false;
 
   @override
   void initState() {
@@ -36,12 +41,53 @@ class _TopUpViewState extends State<TopUpView> {
   Future<void> requestTopUp() async {
     int amount = int.tryParse(amountController.text.replaceAll('.', '')) ?? 0;
     
-    if (amount < 10000) {
-      Get.snackbar('Error', 'Minimal top-up Rp 10.000', backgroundColor: Colors.red, colorText: Colors.white);
+    if (amount < 5000) {
+      Get.snackbar('Nominal Kurang', 'Minimal top-up Rp 5.000', backgroundColor: Colors.red.shade700, colorText: Colors.white);
       return;
     }
 
-    await walletController.topUp(amount.toDouble());
+    setState(() => isLoadingQris = true);
+    try {
+      final res = await ApiClient.post('/user/topup/createNotivgoQris', {
+        'amount': amount,
+      });
+
+      final body = jsonDecode(res.body);
+      if (res.statusCode == 200 && body['status'] == 200 && body['data'] != null) {
+        final d = body['data'];
+        if (!mounted) return;
+        QrisPaymentSheet.show(
+          context: context,
+          orderRef: d['order_ref'],
+          amount: double.tryParse(d['amount'].toString()) ?? amount.toDouble(),
+          qrisImageBase64: d['qris_image_base64'],
+          qrisPayload: d['qris_payload'],
+          expiresAt: d['expires_at'],
+          checkEndpoint: '/user/topup/checkNotivgoStatus',
+          title: 'Top Up QRIS NotivGo',
+          onSuccess: () async {
+            await walletController.fetchHistory();
+            if (Get.isRegistered<AuthController>()) {
+              Get.find<AuthController>().fetchProfile();
+            }
+            Get.back();
+            Get.snackbar(
+              'Top Up Berhasil! 💰',
+              'Saldo Mai-Pay Anda sebesar ${Formatter.currency(amount)} telah ditambahkan.',
+              backgroundColor: Colors.green,
+              colorText: Colors.white,
+              duration: const Duration(seconds: 4),
+            );
+          },
+        );
+      } else {
+        Get.snackbar('Gagal', body['message'] ?? 'Gagal membuat QRIS Top Up', backgroundColor: Colors.red, colorText: Colors.white);
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Terjadi kesalahan jaringan: $e', backgroundColor: Colors.red, colorText: Colors.white);
+    } finally {
+      if (mounted) setState(() => isLoadingQris = false);
+    }
   }
 
   @override
@@ -98,14 +144,14 @@ class _TopUpViewState extends State<TopUpView> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
-                  if (selectedAmount >= 10000) ...[
+                  if (selectedAmount >= 5000) ...[
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryNavy.withValues(alpha: 0.05),
+                        color: const Color(0xFFF0F9FF),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppTheme.primaryNavy.withValues(alpha: 0.15)),
+                        border: Border.all(color: const Color(0xFFBAE6FD)),
                       ),
                       child: Column(
                         children: [
@@ -117,11 +163,11 @@ class _TopUpViewState extends State<TopUpView> {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Row(
+                          const Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Biaya Layanan (0,9%)', style: TextStyle(fontSize: 13, color: Colors.black87)),
-                              Text(Formatter.currency((selectedAmount * 0.009).ceil()), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.orange)),
+                              Text('Biaya Layanan Gateway', style: TextStyle(fontSize: 13, color: Colors.black87)),
+                              Text('GRATIS (Rp 0)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.green)),
                             ],
                           ),
                           const Padding(
@@ -131,16 +177,16 @@ class _TopUpViewState extends State<TopUpView> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Total Pembayaran', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy)),
+                              const Text('Total Pembayaran', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0369A1))),
                               Text(
-                                Formatter.currency(selectedAmount + (selectedAmount * 0.009).ceil()),
-                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
+                                Formatter.currency(selectedAmount),
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0369A1)),
                               ),
                             ],
                           ),
                           const SizedBox(height: 6),
                           const Text(
-                            '*Saldo Mai-Pay Anda akan bertambah utuh sesuai nominal saldo.',
+                            '*Saldo Mai-Pay Anda akan bertambah instan 100% penuh.',
                             style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppTheme.textMuted),
                           ),
                         ],
@@ -162,9 +208,9 @@ class _TopUpViewState extends State<TopUpView> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryNavy.withValues(alpha: 0.04),
+                      color: const Color(0xFFE0F2FE).withOpacity(0.4),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppTheme.primaryNavy.withValues(alpha: 0.15)),
+                      border: Border.all(color: const Color(0xFFBAE6FD)),
                     ),
                     child: Row(
                       children: [
@@ -173,9 +219,9 @@ class _TopUpViewState extends State<TopUpView> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.grey.shade200),
+                            border: Border.all(color: const Color(0xFFBAE6FD)),
                           ),
-                          child: const Icon(Icons.qr_code_scanner, color: AppTheme.primaryNavy, size: 28),
+                          child: const Icon(Icons.qr_code_2, color: Color(0xFF0284C7), size: 28),
                         ),
                         const SizedBox(width: 14),
                         const Expanded(
@@ -184,7 +230,7 @@ class _TopUpViewState extends State<TopUpView> {
                             children: [
                               Row(
                                 children: [
-                                  Text('QRIS Otomatis', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                                  Text('QRIS Instan (NotivGo)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                                   SizedBox(width: 6),
                                   Icon(Icons.check_circle, color: Colors.green, size: 16),
                                 ],
@@ -214,22 +260,22 @@ class _TopUpViewState extends State<TopUpView> {
             BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))
           ],
         ),
-        child: Obx(() => ElevatedButton(
-          onPressed: walletController.isTopUpLoading.value ? null : requestTopUp,
+        child: ElevatedButton(
+          onPressed: isLoadingQris ? null : requestTopUp,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryBlue,
+            backgroundColor: const Color(0xFF0284C7),
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          child: walletController.isTopUpLoading.value 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
+          child: isLoadingQris 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
               : Text(
-                  selectedAmount >= 10000 
-                      ? 'Bayar ${Formatter.currency(selectedAmount + (selectedAmount * 0.009).ceil())} via QRIS'
+                  selectedAmount >= 5000 
+                      ? 'Bayar ${Formatter.currency(selectedAmount)} via QRIS'
                       : 'Bayar via QRIS', 
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)
                 ),
-        )),
+        ),
       ),
     );
   }

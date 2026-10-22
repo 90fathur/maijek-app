@@ -769,7 +769,13 @@ class OrderController extends GetxController {
 
       if (rawResponse.statusCode == 201 || response['status'] == 201 || response['status'] == 200) {
         var orderId = response['data']['order_id'];
-        Get.toNamed('/order-tracking', arguments: {'order_id': orderId});
+        var qris = response['data']?['qris'];
+        Get.toNamed('/order-tracking', arguments: {
+          'order_id': orderId,
+          'qris': qris,
+          'payment_method': paymentMethod.value,
+          'payment_status': response['data']?['payment_status'] ?? 'paid',
+        });
       } else if (response['message']?.contains('Saldo Mai-Pay tidak mencukupi') == true) {
         double currentBalance = double.tryParse(_authController.userData['balance']?.toString() ?? '0') ?? 0;
         InsufficientBalanceSheet.show(

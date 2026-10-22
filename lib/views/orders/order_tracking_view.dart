@@ -33,6 +33,13 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
     // Get order ID from arguments
     String orderId = Get.arguments['order_id'].toString();
     trackingController = Get.put(OrderTrackingController(orderId));
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (trackingController.paymentMethod.value == 'qris' &&
+          trackingController.paymentStatus.value == 'unpaid') {
+        trackingController.showQrisModal(context);
+      }
+    });
   }
 
   @override
@@ -1738,13 +1745,30 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
   // RINCIAN PEMBAYARAN DEFAULT (MAIRIDE / MAICAR / MAISEND)
   // =========================================================================
   Widget _buildDefaultPaymentCard(dynamic driver, BuildContext context) {
+    final pm = trackingController.paymentMethod.value;
+    final bool isMaipay = pm == 'maipay';
+    final bool isQris = pm == 'qris';
+    final bool isPaid = trackingController.paymentStatus.value == 'paid';
+
+    Color cardColor = isQris
+        ? (isPaid ? Colors.indigo.shade800 : Colors.deepOrange.shade700)
+        : (isMaipay ? AppTheme.primaryNavy : Colors.green.shade600);
+
+    String badgeTitle = isQris
+        ? (isPaid ? 'LUNAS VIA QRIS' : 'MENUNGGU PEMBAYARAN QRIS')
+        : (isMaipay ? 'LUNAS VIA MAI-PAY' : 'PEMBAYARAN TUNAI');
+
+    IconData badgeIcon = isQris
+        ? (isPaid ? Icons.qr_code_2 : Icons.pending_actions)
+        : (isMaipay ? Icons.verified_user : Icons.money);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
           decoration: BoxDecoration(
-            color: trackingController.paymentMethod.value == 'maipay' ? AppTheme.primaryNavy : Colors.green.shade600,
+            color: cardColor,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -1752,16 +1776,13 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    trackingController.paymentMethod.value == 'maipay' ? Icons.verified_user : Icons.money, 
-                    color: Colors.white, size: 18
-                  ),
+                  Icon(badgeIcon, color: Colors.white, size: 18),
                   const SizedBox(width: 8),
                   Flexible(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        trackingController.paymentMethod.value == 'maipay' ? 'LUNAS VIA MAI-PAY' : 'PEMBAYARAN TUNAI',
+                        badgeTitle,
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.8),
                       ),
                     ),
@@ -1771,7 +1792,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
               if (trackingController.orderPrice.value > 0) ...[
                 const SizedBox(height: 6),
                 Text(
-                  trackingController.paymentMethod.value == 'maipay'
+                  (isMaipay || isQris)
                       ? 'Total: ${Formatter.currency(trackingController.orderPrice.value)}'
                       : 'Siapkan Tunai: ${Formatter.currency(trackingController.orderPrice.value)}',
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
@@ -1787,7 +1808,27 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
             ],
           ),
         ),
-        if (trackingController.paymentMethod.value != 'maipay' &&
+        if (isQris && !isPaid) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => trackingController.showQrisModal(context),
+              icon: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 18),
+              label: const Text(
+                'BAYAR QRIS SEKARANG (NOTIVGO)',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrange,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 1,
+              ),
+            ),
+          ),
+        ],
+        if (!isMaipay && !isQris &&
             (driver != null &&
                 (driver['driver_qris_is_active'] == 1 || driver['driver_qris_is_active'] == true) &&
                 driver['driver_qris_image'] != null &&

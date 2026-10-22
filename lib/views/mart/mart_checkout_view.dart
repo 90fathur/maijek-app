@@ -500,6 +500,49 @@ class MartCheckoutView extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  // QRIS NotivGo
+                  InkWell(
+                    onTap: () => controller.paymentMethod.value = 'qris',
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: controller.paymentMethod.value == 'qris'
+                            ? const Color(0xFFEEF2FF)
+                            : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: controller.paymentMethod.value == 'qris'
+                              ? Colors.indigo.shade600
+                              : Colors.grey.shade300,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.qr_code_2_rounded,
+                            color: controller.paymentMethod.value == 'qris'
+                                ? Colors.indigo.shade700
+                                : Colors.grey,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('QRIS Instan (NotivGo)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                Text('Scan via BCA, Mandiri, BRI, GoPay, Dana, dll', style: TextStyle(fontSize: 10.5, color: Colors.grey.shade600)),
+                              ],
+                            ),
+                          ),
+                          if (controller.paymentMethod.value == 'qris')
+                            const Icon(Icons.check_circle, color: Colors.indigo, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

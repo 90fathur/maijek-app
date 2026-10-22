@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../core/api_client.dart';
+import '../views/wallet/qris_payment_sheet.dart';
 
 class OrderTrackingController extends GetxController with GetSingleTickerProviderStateMixin {
   final String orderId;
@@ -15,6 +16,10 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
 
   var status = 'pending'.obs; // pending, accepted, in_progress, completed, cancelled
   var paymentMethod = 'cash'.obs;
+  var paymentStatus = 'paid'.obs;
+  var qrisRef = ''.obs;
+  var qrisPayload = ''.obs;
+  var qrisImageBase64 = ''.obs;
   var driverData = Rxn<Map<String, dynamic>>();
   var driverLocation = Rxn<LatLng>();
   
@@ -83,6 +88,17 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
   @override
   void onInit() {
     super.onInit();
+    if (Get.arguments != null && Get.arguments is Map) {
+      final args = Get.arguments as Map;
+      if (args['payment_method'] != null) paymentMethod.value = args['payment_method'].toString();
+      if (args['payment_status'] != null) paymentStatus.value = args['payment_status'].toString();
+      if (args['qris'] != null && args['qris'] is Map) {
+        final q = args['qris'] as Map;
+        qrisRef.value = (q['order_ref'] ?? '').toString();
+        qrisPayload.value = (q['qris_payload'] ?? '').toString();
+        qrisImageBase64.value = (q['qris_image_base64'] ?? '').toString();
+      }
+    }
     _loadMarkerIcons();
     _createVehicleIcon();
     _setupAnimation();
@@ -166,6 +182,10 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
         
         status.value = order['status'];
         paymentMethod.value = order['payment_method'] ?? 'cash';
+        paymentStatus.value = order['payment_status'] ?? 'paid';
+        if (order['qris_ref'] != null) qrisRef.value = order['qris_ref'].toString();
+        if (order['qris_payload'] != null) qrisPayload.value = order['qris_payload'].toString();
+        if (order['qris_image_base64'] != null) qrisImageBase64.value = order['qris_image_base64'].toString();
         serviceType.value = order['service_type'] ?? '';
         pickupAddress.value = order['pickup_address'] ?? '';
         dropoffAddress.value = order['dropoff_address'] ?? '';
@@ -645,6 +665,21 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
         sin(dLng / 2) * sin(dLng / 2);
     final double c = 2 * asin(sqrt(a));
     return r * c;
+  }
+
+  void showQrisModal(BuildContext context) {
+    QrisPaymentSheet.show(
+      context: context,
+      orderRef: qrisRef.value.isNotEmpty ? qrisRef.value : 'ORD-MJ-$orderId',
+      amount: orderPrice.value,
+      qrisPayload: qrisPayload.value.isNotEmpty ? qrisPayload.value : null,
+      qrisImageBase64: qrisImageBase64.value.isNotEmpty ? qrisImageBase64.value.replaceFirst('data:image/png;base64,', '') : null,
+      checkEndpoint: '/user/orders/checkQrisStatus/$orderId',
+      onSuccess: () {
+        paymentStatus.value = 'paid';
+        _fetchOrderData();
+      },
+    );
   }
 
   @override

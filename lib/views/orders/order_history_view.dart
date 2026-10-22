@@ -404,7 +404,24 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                       const SizedBox(width: 8),
                       FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text(Formatter.currency(order['price']), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(Formatter.currency(order['price']), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text(
+                              (order['payment_method'] ?? '').toString().toLowerCase() == 'maipay'
+                                  ? 'Mai-Pay'
+                                  : ((order['payment_method'] ?? '').toString().toLowerCase() == 'qris' ? 'QRIS Instan' : 'Tunai'),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: (order['payment_method'] ?? '').toString().toLowerCase() == 'qris'
+                                    ? Colors.blue.shade700
+                                    : ((order['payment_method'] ?? '').toString().toLowerCase() == 'maipay' ? Colors.green.shade700 : Colors.grey.shade600),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -460,6 +477,24 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                                       fontSize: 11,
                                       fontWeight: FontWeight.w500,
                                       color: Colors.green.shade800,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ] else if ((order['payment_method'] ?? '').toString().toLowerCase() == 'qris') ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(Icons.qr_code_2, size: 13, color: Colors.blue.shade700),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    'Metode QRIS. Jika terlanjur terpotong, dana otomatis masuk ke saldo Mai-Pay atau hubungi CS.',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.blue.shade800,
                                     ),
                                   ),
                                 ),
@@ -542,7 +577,14 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                     if (order['driver_name'] != null && order['driver_name'].toString().isNotEmpty)
                       _buildDetailRow('Driver', '${order['driver_name']}${order['vehicle_plate'] != null ? " (${order['vehicle_plate']})" : ""}'),
                     if (order['payment_method'] != null)
-                      _buildDetailRow('Pembayaran', order['payment_method'].toString().toLowerCase() == 'maipay' ? 'MaiPay (Non-Tunai)' : 'Tunai'),
+                      _buildDetailRow(
+                        'Pembayaran',
+                        order['payment_method'].toString().toLowerCase() == 'maipay'
+                            ? 'MaiPay (Non-Tunai)'
+                            : (order['payment_method'].toString().toLowerCase() == 'qris'
+                                ? 'QRIS Instan (Non-Tunai)'
+                                : 'Tunai'),
+                      ),
                     const SizedBox(height: 10),
                     if (order['items'] != null && (order['items'] is List) && (order['items'] as List).isNotEmpty) ...[
                       Text(

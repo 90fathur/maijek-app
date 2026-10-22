@@ -595,7 +595,7 @@ class CheckoutView extends StatelessWidget {
                             children: [
                               const Text('Metode Pembayaran', style: TextStyle(fontWeight: FontWeight.bold)),
                               DropdownButton<String>(
-                                value: ['cash', 'maipay', 'split_delivery_maipay'].contains(controller.paymentMethod.value)
+                                value: ['cash', 'maipay', 'split_delivery_maipay', 'qris'].contains(controller.paymentMethod.value)
                                     ? controller.paymentMethod.value
                                     : 'cash',
                                 isDense: true,
@@ -603,6 +603,7 @@ class CheckoutView extends StatelessWidget {
                                   DropdownMenuItem(value: 'cash', child: Text('💵 Tunai (Cash)')),
                                   DropdownMenuItem(value: 'maipay', child: Text('💳 Mai-Pay Penuh')),
                                   DropdownMenuItem(value: 'split_delivery_maipay', child: Text('⚡ Split (Ongkir Saldo + Makanan Tunai)')),
+                                  DropdownMenuItem(value: 'qris', child: Text('📲 QRIS Instan (Semua Bank & E-Wallet)')),
                                 ],
                                 onChanged: (val) {
                                   if (val != null) {
@@ -638,6 +639,29 @@ class CheckoutView extends StatelessWidget {
                               ),
                             ],
                           ),
+                          if (controller.paymentMethod.value == 'qris') ...[
+                            Container(
+                              margin: const EdgeInsets.only(top: 4, bottom: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.indigo.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.indigo.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.qr_code_2_rounded, color: Colors.indigo.shade700, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
+                                      'Kode QRIS instan akan muncul otomatis untuk di-scan via aplikasi Bank / E-Wallet Anda.',
+                                      style: TextStyle(fontSize: 11.5, color: Colors.indigo, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                           if (controller.paymentMethod.value == 'maipay') ...[
                             Builder(
                               builder: (context) {
