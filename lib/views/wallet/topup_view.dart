@@ -140,7 +140,7 @@ class _TopUpViewState extends State<TopUpView> {
                     },
                     decoration: InputDecoration(
                       prefixText: 'Rp. ',
-                      hintText: 'Minimal Rp 10.000',
+                      hintText: 'Minimal Rp 5.000',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
