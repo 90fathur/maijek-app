@@ -616,9 +616,9 @@ class CheckoutView extends StatelessWidget {
                                     : 'cash',
                                 isDense: true,
                                 items: const [
-                                  DropdownMenuItem(value: 'cash', child: Text('💵 Tunai (Cash)')),
+                                  DropdownMenuItem(value: 'cash', child: Text('💵 Tunai / QRIS Driver')),
                                   DropdownMenuItem(value: 'maipay', child: Text('💳 Mai-Pay Penuh')),
-                                  DropdownMenuItem(value: 'split_delivery_maipay', child: Text('⚡ Split (Ongkir Saldo + Makanan Tunai)')),
+                                  DropdownMenuItem(value: 'split_delivery_maipay', child: Text('⚡ Split (Ongkir Saldo + Makanan Tunai/QRIS)')),
                                   DropdownMenuItem(value: 'qris', child: Text('📲 QRIS Instan (Semua Bank & E-Wallet)')),
                                 ],
                                 onChanged: (val) {
@@ -814,7 +814,7 @@ class CheckoutView extends StatelessWidget {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          const Text('💵 Siapkan Uang Pas ke Driver (Makanan):', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                                          const Text('💵 Siapkan Tunai/QRIS ke Driver (Makanan):', style: TextStyle(fontSize: 12, color: Colors.black87)),
                                           Text(formatter.format(cashFood), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green)),
                                         ],
                                       ),
@@ -834,7 +834,7 @@ class CheckoutView extends StatelessWidget {
                                   const Text('Total Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
                                   if (controller.paymentMethod.value == 'split_delivery_maipay')
                                     const Text(
-                                      '(Saldo Ongkir + Tunai Makanan)',
+                                      '(Saldo Ongkir + Tunai/QRIS Driver)',
                                       style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600),
                                     ),
                                 ],

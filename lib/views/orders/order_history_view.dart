@@ -411,7 +411,7 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                             Text(
                               (order['payment_method'] ?? '').toString().toLowerCase() == 'maipay'
                                   ? 'Mai-Pay'
-                                  : ((order['payment_method'] ?? '').toString().toLowerCase() == 'qris' ? 'QRIS Instan' : 'Tunai'),
+                                  : ((order['payment_method'] ?? '').toString().toLowerCase() == 'qris' ? 'QRIS Instan' : 'Tunai / QRIS Driver'),
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -583,7 +583,7 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                             ? 'MaiPay (Non-Tunai)'
                             : (order['payment_method'].toString().toLowerCase() == 'qris'
                                 ? 'QRIS Instan (Non-Tunai)'
-                                : 'Tunai'),
+                                : 'Tunai / QRIS Driver'),
                       ),
                     const SizedBox(height: 10),
                     if (order['items'] != null && (order['items'] is List) && (order['items'] as List).isNotEmpty) ...[

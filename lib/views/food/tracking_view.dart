@@ -1399,7 +1399,7 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('💵 Tunai ke Driver (Makanan):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                const Text('💵 Tunai / QRIS Driver (Makanan):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
                 Text(Formatter.currency(cashToDriver), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF16A34A))),
               ],
             ),
@@ -1543,8 +1543,8 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Pembayaran Tunai: ${Formatter.currency(totalPrice)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
-                  const Text('Siapkan uang pas untuk driver saat pesanan tiba.', style: TextStyle(fontSize: 11.5, color: Colors.black54)),
+                  Text('Pembayaran Tunai / QRIS Driver: ${Formatter.currency(totalPrice)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+                  const Text('Bayar tunai atau scan QRIS driver saat pesanan tiba.', style: TextStyle(fontSize: 11.5, color: Colors.black54)),
                 ],
               ),
             ),

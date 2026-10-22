@@ -444,7 +444,7 @@ class MartCheckoutView extends StatelessWidget {
                                   size: 20,
                                 ),
                                 const SizedBox(width: 6),
-                                const Text('Tunai (Cash)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                const Text('Tunai/QRIS Driver', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
                               ],
                             ),
                           ),

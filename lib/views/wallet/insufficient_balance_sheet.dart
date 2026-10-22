@@ -147,7 +147,7 @@ class InsufficientBalanceSheet extends StatelessWidget {
               },
               icon: Icon(Icons.payments_outlined, color: Colors.green.shade700, size: 20),
               label: Text(
-                'Beralih ke Bayar Tunai Saja',
+                'Beralih ke Tunai / QRIS Driver',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: Colors.green.shade800),
               ),
               style: OutlinedButton.styleFrom(

@@ -573,7 +573,7 @@ class _SendViewState extends State<SendView> {
                             const Divider(),
                             ListTile(
                               leading: Icon(Icons.money, color: Colors.green.shade600),
-                              title: const Text('Tunai', style: TextStyle(fontWeight: FontWeight.bold)),
+                              title: const Text('Tunai / QRIS Driver', style: TextStyle(fontWeight: FontWeight.bold)),
                               trailing: Obx(() => orderController.paymentMethod.value == 'cash' ? const Icon(Icons.check_circle, color: Colors.green) : const SizedBox()),
                               onTap: () {
                                 orderController.paymentMethod.value = 'cash';
@@ -605,7 +605,7 @@ class _SendViewState extends State<SendView> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          isQris ? 'QRIS' : (isCash ? 'Tunai' : 'Mai-Pay'), 
+                          isQris ? 'QRIS' : (isCash ? 'Tunai/QRIS Driver' : 'Mai-Pay'), 
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         if (isShort) ...[
