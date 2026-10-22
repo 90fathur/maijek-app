@@ -576,6 +576,22 @@ class MartCheckoutView extends StatelessWidget {
                       Text(Formatter.currency(controller.currentDeliveryFee), style: const TextStyle(fontSize: 13)),
                     ],
                   ),
+                  if (controller.martServiceFee.value > 0) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Text('Biaya Layanan Aplikasi', style: TextStyle(color: Colors.black87, fontSize: 13)),
+                            SizedBox(width: 4),
+                            Icon(Icons.info_outline, size: 14, color: Colors.grey),
+                          ],
+                        ),
+                        Text(Formatter.currency(controller.martServiceFee.value), style: const TextStyle(fontSize: 13)),
+                      ],
+                    ),
+                  ],
                   if (controller.discountAmount > 0) ...[
                     const SizedBox(height: 6),
                     Row(

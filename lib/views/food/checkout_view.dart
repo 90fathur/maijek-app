@@ -570,6 +570,22 @@ class CheckoutView extends StatelessWidget {
                               Text(formatter.format(deliveryFee), style: const TextStyle(fontWeight: FontWeight.bold)),
                             ],
                           ),
+                          if (controller.foodServiceFee.value > 0) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Text('Biaya Layanan Aplikasi', style: TextStyle(color: Colors.black87)),
+                                    SizedBox(width: 4),
+                                    Icon(Icons.info_outline, size: 14, color: Colors.grey),
+                                  ],
+                                ),
+                                Text(formatter.format(controller.foodServiceFee.value), style: const TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ],
                           if (controller.discountAmount > 0) ...[
                             const SizedBox(height: 8),
                             Row(

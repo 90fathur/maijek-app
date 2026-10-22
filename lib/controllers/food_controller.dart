@@ -94,6 +94,8 @@ class FoodController extends GetxController {
   var foodCarPerKmFare = 4000.obs;
   var foodCarBaseDistance = 3.0.obs;
 
+  var foodServiceFee = 2000.obs;
+
   var selectedVehicleType = 'motor'.obs; // 'motor' or 'mobil'
 
   int calculateDeliveryFee(String vehicleType) {
@@ -130,6 +132,8 @@ class FoodController extends GetxController {
           foodCarBaseFare.value = body['data']['food_car_base_fare'] ?? 12000;
           foodCarPerKmFare.value = body['data']['food_car_per_km_fare'] ?? 4000;
           foodCarBaseDistance.value = (body['data']['food_car_base_distance'] ?? 3.0).toDouble();
+
+          foodServiceFee.value = body['data']['food_service_fee'] ?? 2000;
         }
       }
     } catch (e) {
@@ -384,7 +388,7 @@ class FoodController extends GetxController {
   }
 
   int get finalTotal {
-    int total = (cartTotal + currentDeliveryFee) - discountAmount;
+    int total = (cartTotal + currentDeliveryFee + foodServiceFee.value) - discountAmount;
     return total < 0 ? 0 : total;
   }
 

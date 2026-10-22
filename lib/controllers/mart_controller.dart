@@ -144,6 +144,8 @@ class MartController extends GetxController {
   var martCarPerKmFare = 4000.obs;
   var martCarBaseDistance = 3.0.obs;
 
+  var martServiceFee = 2000.obs;
+
   var selectedVehicleType = 'motor'.obs; // 'motor' or 'mobil'
 
   @override
@@ -166,6 +168,8 @@ class MartController extends GetxController {
           martCarBaseFare.value = body['data']['food_car_base_fare'] ?? 12000;
           martCarPerKmFare.value = body['data']['food_car_per_km_fare'] ?? 4000;
           martCarBaseDistance.value = (body['data']['food_car_base_distance'] ?? 3.0).toDouble();
+
+          martServiceFee.value = body['data']['food_service_fee'] ?? 2000;
         }
       }
     } catch (e) {
@@ -462,7 +466,7 @@ class MartController extends GetxController {
   }
 
   int get finalTotal {
-    int total = (cartTotal + currentDeliveryFee) - discountAmount;
+    int total = (cartTotal + currentDeliveryFee + martServiceFee.value) - discountAmount;
     return total < 0 ? 0 : total;
   }
 
