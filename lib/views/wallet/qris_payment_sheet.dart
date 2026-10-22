@@ -134,7 +134,7 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
       final res = await ApiClient.get(url);
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body);
-        if (body['paid'] == true || body['data']?['status'] == 'success' || body['data']?['payment_status'] == 'paid') {
+        if (body is Map && (body['paid'] == true || body['data']?['status'] == 'success' || body['data']?['payment_status'] == 'paid')) {
           _pollingTimer?.cancel();
           _countdownTimer?.cancel();
           if (mounted) {

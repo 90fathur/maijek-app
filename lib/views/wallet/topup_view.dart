@@ -52,17 +52,23 @@ class _TopUpViewState extends State<TopUpView> {
         'amount': amount,
       });
 
-      final body = jsonDecode(res.body);
-      if (res.statusCode == 200 && body['status'] == 200 && body['data'] != null) {
+      dynamic body;
+      try {
+        body = jsonDecode(res.body);
+      } catch (_) {
+        body = null;
+      }
+
+      if (res.statusCode == 200 && body is Map && body['status'] == 200 && body['data'] != null) {
         final d = body['data'];
         if (!mounted) return;
         QrisPaymentSheet.show(
           context: context,
-          orderRef: d['order_ref'],
-          amount: double.tryParse(d['amount'].toString()) ?? amount.toDouble(),
+          orderRef: d['order_ref']?.toString() ?? '',
+          amount: double.tryParse((d['amount'] ?? amount).toString()) ?? amount.toDouble(),
           qrisImageBase64: d['qris_image_base64'],
           qrisPayload: d['qris_payload'],
-          expiresAt: d['expires_at'],
+          expiresAt: int.tryParse((d['expires_at'] ?? '').toString()),
           checkEndpoint: '/user/topup/checkNotivgoStatus',
           title: 'Top Up QRIS NotivGo',
           onSuccess: () async {
@@ -81,10 +87,16 @@ class _TopUpViewState extends State<TopUpView> {
           },
         );
       } else {
-        Get.snackbar('Gagal', body['message'] ?? 'Gagal membuat QRIS Top Up', backgroundColor: Colors.red, colorText: Colors.white);
+        String msg = 'Gagal membuat QRIS Top Up';
+        if (body is Map && body['message'] != null) {
+          msg = body['message'].toString();
+        } else if (res.body.isNotEmpty && !res.body.startsWith('<')) {
+          msg = res.body.replaceAll('"', '');
+        }
+        Get.snackbar('Gagal', msg, backgroundColor: Colors.red, colorText: Colors.white);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Terjadi kesalahan jaringan: $e', backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar('Error', 'Terjadi kesalahan: $e', backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
       if (mounted) setState(() => isLoadingQris = false);
     }
