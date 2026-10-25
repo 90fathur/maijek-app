@@ -61,6 +61,10 @@ class MerchantDetailView extends StatelessWidget {
                   const SizedBox(height: 12),
                   // Live Kasir Status Card
                   _buildLiveKasirStatusCard(context, merchant),
+                  if (merchant['is_busy'] == 1 || merchant['is_busy'] == '1' || merchant['is_busy'] == true) ...[
+                    const SizedBox(height: 8),
+                    _buildBusyModeNotice(context, merchant),
+                  ],
                 ],
               ),
             ),
@@ -86,7 +90,7 @@ class MerchantDetailView extends StatelessWidget {
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
                                       child: Image.network(menu['photo'], width: 80, height: 80, fit: BoxFit.cover,
-                                        errorBuilder: (_,__,___) => Container(width: 80, height: 80, color: Colors.grey[300], child: Icon(Icons.fastfood, color: Colors.grey))),
+                                        errorBuilder: (context, error, stackTrace) => Container(width: 80, height: 80, color: Colors.grey[300], child: Icon(Icons.fastfood, color: Colors.grey))),
                                     )
                                   else
                                     Container(width: 80, height: 80, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(8)), child: Icon(Icons.fastfood, color: Colors.grey)),
@@ -526,5 +530,50 @@ class MerchantDetailView extends StatelessWidget {
         ),
       );
     }
+  }
+
+  Widget _buildBusyModeNotice(BuildContext context, Map merchant) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFDBA74), width: 1.2),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: const BoxDecoration(
+              color: Color(0xFFEA580C),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 16),
+          ),
+          const SizedBox(width: 11),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '🔥 Resto Sedang Ramai Antrean (+15 Mnt)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF9A3412),
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Waktu penyiapan & masak diperkirakan ~30 menit karena tingginya antrean pesanan di resto.',
+                  style: TextStyle(fontSize: 11, color: Color(0xFFC2410C), height: 1.25),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

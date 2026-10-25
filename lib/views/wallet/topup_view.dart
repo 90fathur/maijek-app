@@ -65,7 +65,7 @@ class _TopUpViewState extends State<TopUpView> {
         QrisPaymentSheet.show(
           context: context,
           orderRef: d['order_ref']?.toString() ?? '',
-          amount: double.tryParse((d['amount'] ?? amount).toString()) ?? amount.toDouble(),
+          amount: double.tryParse((d['total_payment'] ?? (d['amount'] ?? amount)).toString()) ?? amount.toDouble(),
           qrisImageBase64: d['qris_image_base64'],
           qrisPayload: d['qris_payload'],
           expiresAt: int.tryParse((d['expires_at'] ?? '').toString()),
