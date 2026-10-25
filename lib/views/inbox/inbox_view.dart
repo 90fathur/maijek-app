@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/theme.dart';
 import '../../controllers/notification_controller.dart';
 import '../../controllers/inbox_chat_controller.dart';
+import '../../controllers/food_controller.dart';
+import '../food/merchant_detail_view.dart';
 
 class InboxView extends StatelessWidget {
   const InboxView({super.key});
@@ -68,6 +71,7 @@ class InboxView extends StatelessWidget {
             if (notif['type'] == 'promo') icon = Icons.local_offer;
             if (notif['type'] == 'transaction') icon = Icons.account_balance_wallet;
             if (notif['type'] == 'system') icon = Icons.security;
+            if (notif['type'] == 'merchant_open') icon = Icons.storefront_rounded;
 
             bool isUnread = notif['is_read'] == 0 || notif['is_read'] == "0";
 
@@ -159,7 +163,7 @@ class InboxView extends StatelessWidget {
       decoration: BoxDecoration(
         color: isUnread ? Colors.white : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: isUnread ? Border.all(color: AppTheme.primaryBlue.withOpacity(0.3)) : null,
+        border: isUnread ? Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.3)) : null,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,9 +251,21 @@ class InboxView extends StatelessWidget {
     } else if (type == 'transaction') {
       badgeColor = Colors.green.shade700;
       typeLabel = 'Transaksi';
+    } else if (type == 'merchant_open') {
+      badgeColor = const Color(0xFF059669);
+      typeLabel = 'Resto Buka & Kasir Siap';
     } else {
       badgeColor = AppTheme.primaryNavy;
       typeLabel = 'Informasi Maijek';
+    }
+
+    // Ekstrak merchant_id jika tersedia
+    int? merchantId;
+    if (type == 'merchant_open' && notif['data'] != null) {
+      try {
+        var d = notif['data'] is String ? jsonDecode(notif['data']) : notif['data'];
+        merchantId = int.tryParse(d['merchant_id']?.toString() ?? '');
+      } catch (_) {}
     }
 
     showModalBottomSheet(
@@ -334,16 +350,49 @@ class InboxView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+              if (merchantId != null && merchantId > 0) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 2,
+                    ),
+                    icon: const Icon(Icons.restaurant_menu_rounded, size: 20),
+                    label: const Text(
+                      'Kunjungi Resto & Pesan Sekarang',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      try {
+                        final foodController = Get.isRegistered<FoodController>()
+                            ? Get.find<FoodController>()
+                            : Get.put(FoodController());
+                        foodController.fetchMerchantDetail(merchantId!);
+                        Get.to(() => MerchantDetailView());
+                      } catch (e) {
+                        debugPrint('Error navigating to merchant detail: $e');
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryNavy,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primaryNavy,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Tutup', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                  child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
             ],
