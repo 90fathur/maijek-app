@@ -26,6 +26,65 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
   bool _isCardCollapsed = false;
 
   void _backToHome() {
+    var order = trackingController.orderData;
+    bool isMart = (order['order_type'] ?? '').toString().toLowerCase() == 'mart' || (order['service_type'] ?? '').toString().toLowerCase() == 'mart';
+    String status = (order['status'] ?? 'pending').toString().toLowerCase();
+
+    if (status == 'pending') {
+      Get.dialog(
+        AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFEF3C7),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFD97706), size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  isMart ? 'Menunggu Toko' : 'Menunggu Resto',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            isMart
+                ? 'Jangan keluar dulu ya! Mungkin butuh waktu 1-2 menit hingga pihak toko memeriksa stok & mengonfirmasi pesanan Anda. Jika Anda kembali ke Beranda, pesanan tetap berjalan di latar belakang.'
+                : 'Jangan keluar dulu ya! Mungkin butuh waktu 1-2 menit hingga kasir resto memeriksa & mengonfirmasi pesanan Anda. Jika Anda kembali ke Beranda, pesanan tetap berjalan di latar belakang.',
+            style: const TextStyle(fontSize: 13.5, color: Colors.black87, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Get.back();
+                if (Get.isRegistered<HomeController>()) {
+                  Get.find<HomeController>().checkActiveOrder();
+                }
+                Get.offAllNamed('/home');
+              },
+              child: const Text('Ke Beranda', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+            ),
+            ElevatedButton(
+              onPressed: () => Get.back(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isMart ? const Color(0xFF059669) : Colors.orange.shade800,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Tetap Tunggu'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     if (Get.isRegistered<HomeController>()) {
       Get.find<HomeController>().checkActiveOrder();
     }
@@ -877,6 +936,59 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                       ),
                     ],
                   ),
+                  // Banner Edukasi & Pengingat 1-2 Menit saat status masih 'pending'
+                  if (order['status'] == 'pending') ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFCD34D), width: 1.2),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFDE68A),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFB45309), size: 16),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Mohon jangan menutup aplikasi dulu ya!',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF92400E),
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  isMart
+                                      ? 'Mungkin butuh waktu 1–2 menit hingga pihak toko memeriksa stok & mengonfirmasi pesanan Anda.'
+                                      : 'Mungkin butuh waktu 1–2 menit hingga kasir resto memeriksa & mengonfirmasi pesanan Anda.',
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF78350F),
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   // Smart ETA Card or Cancellation Card
                   if (isCancelled)
                     _buildCancellationCard(order, isMart)
