@@ -6,7 +6,7 @@ import 'dart:async';
 import '../core/api_client.dart';
 import 'auth_controller.dart';
 import '../views/wallet/insufficient_balance_sheet.dart';
-import 'dart:math' show atan2, cos, sin, pi;
+import 'dart:math' show atan2, cos, sin, pi, sqrt, asin;
 import 'package:flutter/material.dart';
 
 enum OrderState { idle, selectingPickup, selectingDropoff, calculating, ready }
@@ -38,6 +38,43 @@ class OrderController extends GetxController {
   int get originalPrice => price.value + discount.value;
   bool get hasActivePromo => appliedPromo.value.isNotEmpty && appliedPromo.value != 'Tidak Ada' && promoAmount > 0;
 
+  // Pengaturan Cuaca Dinamis & Zona Hujan (Dual Weather Safety)
+  var weatherZones = <dynamic>[].obs;
+  var rainSurgeEnabled = true.obs;
+  var activeRainZoneName = ''.obs;
+
+  double _calcDist(double lat1, double lon1, double lat2, double lon2) {
+    const p = 0.017453292519943295;
+    final a = 0.5 - cos((lat2 - lat1) * p) / 2 +
+        cos(lat1 * p) * cos(lat2 * p) *
+        (1 - cos((lon2 - lon1) * p)) / 2;
+    return 12742 * asin(sqrt(a));
+  }
+
+  int getRainSurgeForLocation(double lat, double lng, String serviceType) {
+    if (!rainSurgeEnabled.value || weatherZones.isEmpty || lat == 0 || lng == 0) return 0;
+    for (final z in weatherZones) {
+      if (z['is_active'] != 1 && z['is_active'] != true) continue;
+      final double cLat = double.tryParse(z['center_lat']?.toString() ?? '') ?? 0;
+      final double cLng = double.tryParse(z['center_lng']?.toString() ?? '') ?? 0;
+      final double rKm = double.tryParse(z['radius_km']?.toString() ?? '') ?? 8.0;
+
+      final dist = _calcDist(lat, lng, cLat, cLng);
+      if (dist <= rKm) {
+        final bool isRaining = (z['is_raining'] == 1 || z['is_raining'] == true);
+        if (isRaining) {
+          activeRainZoneName.value = z['zone_name'] ?? '';
+          final bool isCar = serviceType.contains('mobil') || serviceType == 'car' || serviceType == 'car_premium';
+          return isCar
+              ? (int.tryParse(z['surge_amount_mobil']?.toString() ?? '') ?? 4000)
+              : (int.tryParse(z['surge_amount_motor']?.toString() ?? '') ?? 2500);
+        }
+      }
+    }
+    activeRainZoneName.value = '';
+    return 0;
+  }
+
   int calculateVehicleGrossPrice(String type) {
     double base = baseFare.value.toDouble();
     double pkm = perKmFare.value.toDouble();
@@ -65,12 +102,17 @@ class OrderController extends GetxController {
       bDist = titipMobilBaseDistance.value;
     }
 
+    int gross = 0;
     if (distanceKm.value <= bDist) {
-      return base.round();
+      gross = base.round();
     } else {
       double extra = distanceKm.value - bDist;
-      return (base + (extra * pkm)).round();
+      gross = (base + (extra * pkm)).round();
     }
+
+    // Tambahan Insentif Cuaca Hujan jika zona penjemputan sedang aktif hujan
+    int surge = getRainSurgeForLocation(pickupLocation.value.latitude, pickupLocation.value.longitude, type);
+    return gross + surge;
   }
 
   int calculateVehicleDiscount(String type) {
@@ -430,6 +472,13 @@ class OrderController extends GetxController {
           titipMobilBaseFare.value = int.tryParse(body['data']['titip_mobil_base_fare'].toString()) ?? 25000;
           titipMobilBaseDistance.value = (body['data']['titip_mobil_base_distance'] ?? 3.0).toDouble();
           titipMobilPerKm.value = int.tryParse(body['data']['titip_mobil_per_km'].toString()) ?? 5000;
+
+          if (body['data']['rain_surge_enabled'] != null) {
+            rainSurgeEnabled.value = (body['data']['rain_surge_enabled'] == true || body['data']['rain_surge_enabled'].toString() == '1');
+          }
+          if (body['data']['weather_zones'] != null && body['data']['weather_zones'] is List) {
+            weatherZones.value = body['data']['weather_zones'];
+          }
         }
       }
     } catch (e) {
@@ -643,6 +692,10 @@ class OrderController extends GetxController {
           double extraCost = extraDistance * kmCost;
           price.value = (baseCost + extraCost).round();
         }
+
+        // Tambahan Insentif Cuaca Hujan jika zona penjemputan sedang aktif hujan
+        int rainSurge = getRainSurgeForLocation(pickupLocation.value.latitude, pickupLocation.value.longitude, selectedVehicle.value);
+        price.value += rainSurge;
 
         // Apply discount if any
         if (appliedPromo.value.isNotEmpty && appliedPromo.value != 'Tidak Ada' && promoAmount > 0) {

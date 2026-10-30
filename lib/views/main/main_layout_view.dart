@@ -272,11 +272,7 @@ class _MainLayoutViewState extends State<MainLayoutView> {
 
       if (status == 'pending') {
         statusHeadline = isCarService ? 'Mencari driver Mai-Car terdekat...' : 'Mencari pengemudi terdekat...';
-        subInfo = isCarService
-            ? 'Menghubungkan ke armada mobil di sekitar Anda'
-            : (serviceType == 'mai_send_motor'
-                ? 'Menghubungkan ke armada kurir paket'
-                : (serviceType == 'mai_titip' ? 'Menghubungkan ke driver jastip' : 'Menghubungkan ke driver di sekitar Anda'));
+        subInfo = 'Jangan keluar dulu, mencari driver cocok (~1-2 mnt)';
       } else if (status == 'accepted') {
         if (serviceType == 'mai_send_motor') {
           statusHeadline = 'Kurir menuju lokasi paket';

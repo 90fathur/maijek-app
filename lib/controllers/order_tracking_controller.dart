@@ -592,8 +592,8 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
           ? 'Mencari Driver Mai-Titip...'
           : (isCar ? 'Mencari Driver MaiCar...' : 'Mencari Driver MaiRide...');
       etaSubtitle.value = isTitip
-          ? 'Menghubungkan ke driver terdekat untuk berbelanja.'
-          : 'Estimasi perjalanan: $minMin-$maxMin mnt (${etaArrivalClock.value})';
+          ? 'Jangan keluar dulu, butuh waktu 1-2 menit mencari driver.'
+          : 'Jangan keluar dulu, butuh waktu 1-2 menit mencari driver.';
       titipStep.value = 1;
     } else if (st == 'accepted') {
       int pickupMin = 4;

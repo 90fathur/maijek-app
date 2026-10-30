@@ -50,9 +50,57 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      body: Stack(
+    return PopScope(
+      canPop: trackingController.status.value != 'pending',
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Get.dialog(
+          AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFEF3C7),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFD97706), size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text('Sedang Mencari Driver', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            content: const Text(
+              'Jangan keluar dulu ya! Mungkin butuh waktu 1-2 menit untuk mencari driver yang cocok. Jika Anda kembali ke Beranda, pesanan tetap berjalan di latar belakang.',
+              style: TextStyle(fontSize: 13.5, color: Colors.black87, height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Get.back();
+                  Get.offAllNamed('/home');
+                },
+                child: const Text('Ke Beranda', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.back(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryNavy,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Tetap Tunggu'),
+              ),
+            ],
+          ),
+        );
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.backgroundLight,
+        body: Stack(
         children: [
           // Map / Radar Area (Full screen)
           Obx(() {
@@ -394,8 +442,9 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
           }),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildMapFloatingButton({
     required IconData icon,
@@ -458,22 +507,102 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
   }
 
   Widget _buildPendingCard(BuildContext context) {
+    final rawService = trackingController.serviceType.value.toLowerCase();
+    final isCar = rawService.contains('car') || rawService.contains('mobil');
+    final isSend = rawService.contains('send');
+    final isTitip = rawService.contains('titip');
+
+    String searchingTitle = 'Mencari Driver MaiRide...';
+    String searchingSubtitle = 'Mohon tunggu, kami sedang mencarikan\ndriver motor terbaik di sekitar Anda.';
+    if (isCar) {
+      searchingTitle = 'Mencari Driver MaiCar...';
+      searchingSubtitle = 'Mohon tunggu, kami sedang mencarikan\ndriver mobil terbaik di sekitar Anda.';
+    } else if (isSend) {
+      searchingTitle = 'Mencari Kurir MaiSend...';
+      searchingSubtitle = 'Mohon tunggu, kami sedang mencarikan\nkurir terbaik untuk mengantar paket Anda.';
+    } else if (isTitip) {
+      searchingTitle = 'Mencari Driver MaiTitip...';
+      searchingSubtitle = 'Mohon tunggu, kami sedang mencarikan\ndriver jastip terbaik untuk belanjaan Anda.';
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          (trackingController.serviceType.value.contains('car') || trackingController.serviceType.value.contains('mobil'))
-              ? 'Mencari Driver MaiCar...'
-              : 'Mencari Driver MaiRide...',
+          searchingTitle,
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textMain),
         ),
         const SizedBox(height: 8),
         Text(
-          (trackingController.serviceType.value.contains('car') || trackingController.serviceType.value.contains('mobil'))
-              ? 'Mohon tunggu, kami sedang mencarikan\ndriver mobil terbaik di sekitar Anda.'
-              : 'Mohon tunggu, kami sedang mencarikan\ndriver motor terbaik di sekitar Anda.',
+          searchingSubtitle,
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 14, color: AppTheme.textMuted),
+        ),
+        const SizedBox(height: 16),
+        // Kartu Edukasi / Peringatan Cerdas: Jangan Keluar Dulu
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFFFBEB), Color(0xFFFEF3C7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFD97706).withValues(alpha: 0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 1),
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.hourglass_top_rounded,
+                  size: 18,
+                  color: Color(0xFFB45309),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Jangan keluar dulu ya!',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF92400E),
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Mungkin butuh waktu 1-2 menit untuk mencari driver yang cocok di sekitar Anda.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF78350F),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         if (trackingController.etaRangeText.value.isNotEmpty) ...[
           const SizedBox(height: 12),
