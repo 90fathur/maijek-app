@@ -43,6 +43,26 @@ class OrderController extends GetxController {
   var rainSurgeEnabled = true.obs;
   var activeRainZoneName = ''.obs;
 
+  // Status Dinamis Gateway QRIS NotivGo
+  var qrisActive = true.obs;
+  var qrisRideActive = true.obs;
+  var qrisSendActive = true.obs;
+  var qrisTitipActive = true.obs;
+  var qrisMaintenanceMessage = 'Metode pembayaran QRIS sedang dalam pemeliharaan sementara. Silakan gunakan metode Tunai atau Mai-Pay.'.obs;
+
+  bool isQrisAvailableForService(String serviceType) {
+    if (!qrisActive.value) return false;
+    final st = serviceType.toLowerCase();
+    if (st.contains('ride') || st.contains('car') || st.contains('mobil') || st == 'motor') {
+      return qrisRideActive.value;
+    } else if (st.contains('send') || st.contains('kurir')) {
+      return qrisSendActive.value;
+    } else if (st.contains('titip') || st.contains('jastip')) {
+      return qrisTitipActive.value;
+    }
+    return qrisActive.value;
+  }
+
   double _calcDist(double lat1, double lon1, double lat2, double lon2) {
     const p = 0.017453292519943295;
     final a = 0.5 - cos((lat2 - lat1) * p) / 2 +
@@ -479,6 +499,26 @@ class OrderController extends GetxController {
           if (body['data']['weather_zones'] != null && body['data']['weather_zones'] is List) {
             weatherZones.value = body['data']['weather_zones'];
           }
+
+          if (body['data']['qris_active'] != null) {
+            qrisActive.value = (body['data']['qris_active'].toString() == '1' || body['data']['qris_active'] == true);
+          }
+          if (body['data']['qris_ride_active'] != null) {
+            qrisRideActive.value = (body['data']['qris_ride_active'].toString() == '1' || body['data']['qris_ride_active'] == true);
+          }
+          if (body['data']['qris_send_active'] != null) {
+            qrisSendActive.value = (body['data']['qris_send_active'].toString() == '1' || body['data']['qris_send_active'] == true);
+          }
+          if (body['data']['qris_titip_active'] != null) {
+            qrisTitipActive.value = (body['data']['qris_titip_active'].toString() == '1' || body['data']['qris_titip_active'] == true);
+          }
+          if (body['data']['qris_maintenance_message'] != null && body['data']['qris_maintenance_message'].toString().isNotEmpty) {
+            qrisMaintenanceMessage.value = body['data']['qris_maintenance_message'].toString();
+          }
+
+          if (paymentMethod.value == 'qris' && !isQrisAvailableForService(selectedVehicle.value)) {
+            paymentMethod.value = 'cash';
+          }
         }
       }
     } catch (e) {
@@ -746,6 +786,20 @@ class OrderController extends GetxController {
         backgroundColor: Colors.black87,
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    // Proteksi jika QRIS sedang dinonaktifkan / gangguan
+    if (paymentMethod.value == 'qris' && !isQrisAvailableForService(selectedVehicle.value)) {
+      Get.snackbar(
+        'QRIS Sedang Gangguan',
+        qrisMaintenanceMessage.value,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.deepOrange,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
       );
       return;
     }

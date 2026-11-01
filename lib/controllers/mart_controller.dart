@@ -145,6 +145,8 @@ class MartController extends GetxController {
   var martCarBaseDistance = 3.0.obs;
 
   var martServiceFee = 2000.obs;
+  var isQrisActive = true.obs;
+  var qrisMaintenanceMessage = 'Metode pembayaran QRIS sedang dalam pemeliharaan sementara.'.obs;
 
   var selectedVehicleType = 'motor'.obs; // 'motor' or 'mobil'
 
@@ -170,6 +172,18 @@ class MartController extends GetxController {
           martCarBaseDistance.value = (body['data']['food_car_base_distance'] ?? 3.0).toDouble();
 
           martServiceFee.value = body['data']['food_service_fee'] ?? 2000;
+
+          if (body['data']['qris_mart_active'] != null || body['data']['qris_active'] != null) {
+            isQrisActive.value = (body['data']['qris_mart_active'] ?? body['data']['qris_active']).toString() == '1' ||
+                (body['data']['qris_mart_active'] ?? body['data']['qris_active']) == true;
+          }
+          if (body['data']['qris_maintenance_message'] != null && body['data']['qris_maintenance_message'].toString().isNotEmpty) {
+            qrisMaintenanceMessage.value = body['data']['qris_maintenance_message'].toString();
+          }
+
+          if (paymentMethod.value == 'qris' && !isQrisActive.value) {
+            paymentMethod.value = 'cash';
+          }
         }
       }
     } catch (e) {
@@ -506,6 +520,18 @@ class MartController extends GetxController {
         );
         return false;
       }
+    }
+
+    if (paymentMethod == 'qris' && !isQrisActive.value) {
+      Get.snackbar(
+        'QRIS Sedang Gangguan',
+        qrisMaintenanceMessage.value,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.deepOrange,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+      );
+      return false;
     }
 
     isLoading.value = true;

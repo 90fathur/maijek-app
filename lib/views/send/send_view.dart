@@ -560,16 +560,29 @@ class _SendViewState extends State<SendView> {
                               },
                             ),
                             const Divider(),
-                            ListTile(
-                              leading: Icon(Icons.qr_code_2_rounded, color: Colors.indigo.shade700),
-                              title: const Text('QRIS Instan', style: TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: const Text('BCA, Mandiri, BRI, BNI, GoPay, OVO, Dana, dll', style: TextStyle(fontSize: 11)),
-                              trailing: Obx(() => orderController.paymentMethod.value == 'qris' ? const Icon(Icons.check_circle, color: Colors.green) : const SizedBox()),
-                              onTap: () {
-                                orderController.paymentMethod.value = 'qris';
-                                Get.back();
-                              },
-                            ),
+                            Obx(() {
+                              final bool qActive = orderController.isQrisAvailableForService('send');
+                              if (!qActive) {
+                                return ListTile(
+                                  leading: const Icon(Icons.qr_code_2_rounded, color: Colors.grey),
+                                  title: const Text('QRIS Instan (Pemeliharaan)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                                  subtitle: Text(orderController.qrisMaintenanceMessage.value, style: const TextStyle(fontSize: 10, color: Colors.red)),
+                                  onTap: () {
+                                    Get.snackbar('QRIS Sedang Gangguan', orderController.qrisMaintenanceMessage.value, backgroundColor: Colors.deepOrange, colorText: Colors.white);
+                                  },
+                                );
+                              }
+                              return ListTile(
+                                leading: Icon(Icons.qr_code_2_rounded, color: Colors.indigo.shade700),
+                                title: const Text('QRIS Instan', style: TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: const Text('BCA, Mandiri, BRI, BNI, GoPay, OVO, Dana, dll', style: TextStyle(fontSize: 11)),
+                                trailing: orderController.paymentMethod.value == 'qris' ? const Icon(Icons.check_circle, color: Colors.green) : const SizedBox(),
+                                onTap: () {
+                                  orderController.paymentMethod.value = 'qris';
+                                  Get.back();
+                                },
+                              );
+                            }),
                             const Divider(),
                             ListTile(
                               leading: Icon(Icons.money, color: Colors.green.shade600),

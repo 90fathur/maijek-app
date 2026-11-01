@@ -610,19 +610,27 @@ class CheckoutView extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text('Metode Pembayaran', style: TextStyle(fontWeight: FontWeight.bold)),
-                              DropdownButton<String>(
-                                value: ['cash', 'maipay', 'split_delivery_maipay', 'qris'].contains(controller.paymentMethod.value)
-                                    ? controller.paymentMethod.value
-                                    : 'cash',
-                                isDense: true,
-                                items: const [
-                                  DropdownMenuItem(value: 'cash', child: Text('💵 Tunai / QRIS Driver')),
-                                  DropdownMenuItem(value: 'maipay', child: Text('💳 Mai-Pay Penuh')),
-                                  DropdownMenuItem(value: 'split_delivery_maipay', child: Text('⚡ Split (Ongkir Saldo + Makanan Tunai/QRIS)')),
-                                  DropdownMenuItem(value: 'qris', child: Text('📲 QRIS Instan (Semua Bank & E-Wallet)')),
-                                ],
-                                onChanged: (val) {
-                                  if (val != null) {
+                              Obx(() {
+                                final bool isQrisAvailable = controller.isQrisActive.value;
+                                return DropdownButton<String>(
+                                  value: ['cash', 'maipay', 'split_delivery_maipay', 'qris'].contains(controller.paymentMethod.value)
+                                      ? (controller.paymentMethod.value == 'qris' && !isQrisAvailable ? 'cash' : controller.paymentMethod.value)
+                                      : 'cash',
+                                  isDense: true,
+                                  items: [
+                                    const DropdownMenuItem(value: 'cash', child: Text('💵 Tunai / QRIS Driver')),
+                                    const DropdownMenuItem(value: 'maipay', child: Text('💳 Mai-Pay Penuh')),
+                                    const DropdownMenuItem(value: 'split_delivery_maipay', child: Text('⚡ Split (Ongkir Saldo + Makanan Tunai/QRIS)')),
+                                    if (isQrisAvailable)
+                                      const DropdownMenuItem(value: 'qris', child: Text('📲 QRIS Instan (Semua Bank & E-Wallet)'))
+                                    else
+                                      const DropdownMenuItem(value: 'qris_disabled', enabled: false, child: Text('📲 QRIS (Pemeliharaan)', style: TextStyle(color: Colors.grey))),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val == null || val == 'qris_disabled') {
+                                      Get.snackbar('QRIS Sedang Gangguan', controller.qrisMaintenanceMessage.value, backgroundColor: Colors.deepOrange, colorText: Colors.white);
+                                      return;
+                                    }
                                     controller.paymentMethod.value = val;
                                     final authCtrl = Get.find<AuthController>();
                                     final bal = double.tryParse(authCtrl.userData['balance']?.toString() ?? '0') ?? 0;
@@ -649,10 +657,10 @@ class CheckoutView extends StatelessWidget {
                                         );
                                       }
                                     }
-                                  }
-                                },
-                                underline: const SizedBox(),
-                              ),
+                                  },
+                                  underline: const SizedBox(),
+                                );
+                              }),
                             ],
                           ),
                           if (controller.paymentMethod.value == 'qris') ...[
