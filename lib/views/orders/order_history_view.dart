@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../core/api_client.dart';
 import '../../controllers/auth_controller.dart';
 import '../../core/utils.dart';
+import '../wallet/qris_payment_sheet.dart';
 
 class OrderHistoryView extends StatefulWidget {
   const OrderHistoryView({super.key});
@@ -425,6 +426,73 @@ class _OrderHistoryViewState extends State<OrderHistoryView> {
                       ),
                     ],
                   ),
+                  // ⚠️ Callout Pembayaran QRIS jika Aktif & Belum Lunas
+                  if (isActive && (order['payment_method'] ?? '').toString().toLowerCase() == 'qris' && (order['payment_status'] ?? '').toString().toLowerCase() != 'paid') ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFCD34D), width: 1.2),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.qr_code_2_rounded, size: 22, color: Color(0xFFD97706)),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Menunggu Pembayaran QRIS',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF92400E)),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Selesaikan pembayaran agar pesanan diproses',
+                                  style: TextStyle(fontSize: 10.5, color: Color(0xFFB45309)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              final double amt = double.tryParse((order['price'] ?? 0).toString()) ?? 0;
+                              final bool isFood = order['type'] == 'food';
+                              QrisPaymentSheet.show(
+                                context: context,
+                                orderRef: (order['qris_ref'] != null && order['qris_ref'].toString().isNotEmpty)
+                                    ? order['qris_ref'].toString()
+                                    : 'ORD-MJ-${order['id']}',
+                                amount: amt,
+                                qrisPayload: order['qris_payload']?.toString(),
+                                qrisImageBase64: (order['qris_image_base64'] ?? '').toString().replaceFirst('data:image/png;base64,', ''),
+                                checkEndpoint: isFood
+                                    ? '/user/food/checkQrisStatus/${order['id']}'
+                                    : '/user/orders/checkQrisStatus/${order['id']}',
+                                onSuccess: () {
+                                  _fetchOrders();
+                                },
+                              );
+                            },
+                            icon: const Icon(Icons.qr_code_scanner, size: 13),
+                            label: const Text('Bayar QR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0E1B38),
+                              foregroundColor: const Color(0xFFFDB813),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   // ❌ Callout Alasan Penolakan / Pembatalan
                   if (status == 'cancelled') ...[
                     const SizedBox(height: 12),

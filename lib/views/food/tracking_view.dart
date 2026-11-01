@@ -24,6 +24,24 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
   late FoodTrackingController trackingController;
   late AnimationController _radarController;
   bool _isCardCollapsed = false;
+  bool _hasAutoShownQris = false;
+
+  void _openQrisSheet(BuildContext context, dynamic order) {
+    double totalPrice = double.tryParse(order['total_price']?.toString() ?? '0') ?? 0;
+    QrisPaymentSheet.show(
+      context: context,
+      orderRef: (order['qris_ref'] != null && order['qris_ref'].toString().isNotEmpty)
+          ? order['qris_ref'].toString()
+          : 'ORD-MJ-${order['id']}',
+      amount: totalPrice,
+      qrisPayload: order['qris_payload']?.toString(),
+      qrisImageBase64: (order['qris_image_base64'] ?? '').toString().replaceFirst('data:image/png;base64,', ''),
+      checkEndpoint: '/user/food/checkQrisStatus/${order['id']}',
+      onSuccess: () {
+        Get.find<FoodTrackingController>().fetchOrderStatus();
+      },
+    );
+  }
 
   void _backToHome() {
     var order = trackingController.orderData;
@@ -99,6 +117,20 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat();
+
+    // Auto-open QRIS modal jika pesanan QRIS belum dibayar
+    ever<Map<dynamic, dynamic>>(trackingController.orderData, (order) {
+      if (!_hasAutoShownQris && mounted && order.isNotEmpty) {
+        bool isQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris';
+        bool isPaid = (order['payment_status'] ?? 'paid') == 'paid';
+        if (isQris && !isPaid) {
+          _hasAutoShownQris = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _openQrisSheet(context, order);
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -620,6 +652,97 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                 ),
               ),
             ),
+
+            // Top Floating QRIS Alert Banner jika belum lunas
+            Obx(() {
+              var order = trackingController.orderData;
+              if (order.isEmpty) return const SizedBox.shrink();
+              bool isQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris';
+              bool isPaid = (order['payment_status'] ?? 'paid') == 'paid';
+              if (!isQris || isPaid) return const SizedBox.shrink();
+
+              double totalPrice = double.tryParse(order['total_price']?.toString() ?? '0') ?? 0;
+
+              return Positioned(
+                top: MediaQuery.of(context).padding.top + 80,
+                left: 16,
+                right: 16,
+                child: Material(
+                  elevation: 6,
+                  borderRadius: BorderRadius.circular(16),
+                  color: const Color(0xFFFFFBEB),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _openQrisSheet(context, order),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFCD34D), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.amber.withOpacity(0.12),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0E1B38),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFFFDB813), size: 24),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'Menunggu Pembayaran',
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF92400E)),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      Formatter.currency(totalPrice),
+                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFFB45309)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  'Ketuk untuk buka kode QR & bayar sekarang',
+                                  style: TextStyle(fontSize: 11, color: Colors.black87),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () => _openQrisSheet(context, order),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0E1B38),
+                              foregroundColor: const Color(0xFFFDB813),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('Bayar QR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
           
           // Tombol Pusatkan Peta (Recenter Camera)
           Positioned(
@@ -695,12 +818,21 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
     String range = trackingController.etaRangeText.value;
     String etaSummary = clock.isNotEmpty ? '$clock • $range' : subtitleText;
 
+    final bool isQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris';
+    final bool isPaid = (order['payment_status'] ?? 'paid') == 'paid';
+    final bool isUnpaidQris = isQris && !isPaid;
+
+    if (isUnpaidQris && !isCancelled) {
+      titleText = 'Menunggu Pembayaran QRIS';
+      subtitleText = 'Ketuk untuk scan kode QR & bayar sekarang';
+    }
+
     final vType = (order['vehicle_type'] ?? 'motor').toString().toLowerCase();
     final bool isCar = vType.contains('car') || vType.contains('mobil');
-    final Color vehicleBrandColor = isCar ? const Color(0xFF0066CC) : AppTheme.primaryNavy;
+    final Color vehicleBrandColor = isUnpaidQris ? const Color(0xFFD97706) : (isCar ? const Color(0xFF0066CC) : AppTheme.primaryNavy);
     final IconData vehicleIcon = isCancelled
         ? Icons.cancel_outlined
-        : (isMart ? Icons.shopping_basket : (isCar ? Icons.directions_car_rounded : Icons.two_wheeler_rounded));
+        : (isUnpaidQris ? Icons.qr_code_2_rounded : (isMart ? Icons.shopping_basket : (isCar ? Icons.directions_car_rounded : Icons.two_wheeler_rounded)));
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -809,6 +941,22 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                   },
                 ),
               ],
+              if (isUnpaidQris && !isCancelled) ...[
+                ElevatedButton.icon(
+                  onPressed: () => _openQrisSheet(context, order),
+                  icon: const Icon(Icons.qr_code_scanner, size: 13),
+                  label: const Text('Bayar QR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0E1B38),
+                    foregroundColor: const Color(0xFFFDB813),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
               // Expand Button
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -837,12 +985,21 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
 
   // 🔹 Tampilan Lengkap / Expanded: Detail resto, driver, timeline, dan tombol tindakan
   Widget _buildExpandedCard(dynamic order, bool isMart, bool isCancelled, String titleText, String subtitleText, BuildContext context) {
+    final bool isQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris';
+    final bool isPaid = (order['payment_status'] ?? 'paid') == 'paid';
+    final bool isUnpaidQris = isQris && !isPaid;
+
+    if (isUnpaidQris && !isCancelled) {
+      titleText = 'Menunggu Pembayaran QRIS';
+      subtitleText = 'Ketuk untuk scan kode QR & bayar sekarang';
+    }
+
     final vType = (order['vehicle_type'] ?? 'motor').toString().toLowerCase();
     final bool isCar = vType.contains('car') || vType.contains('mobil');
-    final Color vehicleBrandColor = isCar ? const Color(0xFF0066CC) : AppTheme.primaryNavy;
+    final Color vehicleBrandColor = isUnpaidQris ? const Color(0xFFD97706) : (isCar ? const Color(0xFF0066CC) : AppTheme.primaryNavy);
     final IconData vehicleIcon = isCancelled
         ? Icons.cancel_outlined
-        : (isMart ? Icons.shopping_basket : (isCar ? Icons.directions_car_rounded : Icons.two_wheeler_rounded));
+        : (isUnpaidQris ? Icons.qr_code_2_rounded : (isMart ? Icons.shopping_basket : (isCar ? Icons.directions_car_rounded : Icons.two_wheeler_rounded)));
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,

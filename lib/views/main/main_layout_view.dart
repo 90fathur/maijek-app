@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:in_app_update/in_app_update.dart';
 import '../../core/theme.dart';
+import '../../core/utils.dart';
 import '../home/home_view.dart';
 import '../wallet/wallet_view.dart';
 import '../orders/order_history_view.dart';
@@ -200,6 +201,9 @@ class _MainLayoutViewState extends State<MainLayoutView> {
     bool isFood = foodOrder != null;
     dynamic order = isFood ? foodOrder : rideOrder;
 
+    final bool isUnpaidQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris' &&
+        (order['payment_status'] ?? '').toString().toLowerCase() != 'paid';
+
     String serviceType = (order['service_type'] ?? (isFood ? 'food' : 'motor')).toString().toLowerCase();
     String status = (order['status'] ?? 'pending').toString().toLowerCase();
     String dVehicle = (order['driver_vehicle_type'] ?? order['vehicle_type'] ?? '').toString().toLowerCase();
@@ -245,7 +249,14 @@ class _MainLayoutViewState extends State<MainLayoutView> {
       String driverName = order['driver_name'] ?? '';
       String plate = order['vehicle_plate'] ?? '';
 
-      if (status == 'pending') {
+      if (isUnpaidQris) {
+        serviceTitle = 'QRIS';
+        serviceIcon = Icons.qr_code_2_rounded;
+        serviceColor = const Color(0xFFD97706);
+        statusHeadline = 'Menunggu Pembayaran QRIS';
+        double amt = double.tryParse((order['total_price'] ?? order['price'] ?? 0).toString()) ?? 0;
+        subInfo = amt > 0 ? '${Formatter.currency(amt)} • Ketuk untuk bayar QR' : 'Ketuk untuk buka kode QR & bayar';
+      } else if (status == 'pending') {
         statusHeadline = 'Menunggu konfirmasi $merchantName';
         subInfo = isOrderMart ? 'Pesanan telah terkirim ke toko' : 'Pesanan telah terkirim ke restoran';
       } else if (status == 'accepted_by_merchant' || status == 'processing') {
@@ -270,7 +281,14 @@ class _MainLayoutViewState extends State<MainLayoutView> {
       String driverName = order['driver_name'] ?? '';
       String plate = order['vehicle_plate'] ?? '';
 
-      if (status == 'pending') {
+      if (isUnpaidQris) {
+        serviceTitle = 'QRIS';
+        serviceIcon = Icons.qr_code_2_rounded;
+        serviceColor = const Color(0xFFD97706);
+        statusHeadline = 'Menunggu Pembayaran QRIS';
+        double amt = double.tryParse((order['price'] ?? 0).toString()) ?? 0;
+        subInfo = amt > 0 ? '${Formatter.currency(amt)} • Ketuk untuk bayar QR' : 'Ketuk untuk buka kode QR & bayar';
+      } else if (status == 'pending') {
         statusHeadline = isCarService ? 'Mencari driver Mai-Car terdekat...' : 'Mencari pengemudi terdekat...';
         subInfo = 'Jangan keluar dulu, mencari driver cocok (~1-2 mnt)';
       } else if (status == 'accepted') {
@@ -408,18 +426,18 @@ class _MainLayoutViewState extends State<MainLayoutView> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Lacak',
+                      isUnpaidQris ? 'Bayar QR' : 'Lacak',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: serviceColor,
+                        color: isUnpaidQris ? const Color(0xFF92400E) : serviceColor,
                       ),
                     ),
                     const SizedBox(width: 3),
                     Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 11,
-                      color: serviceColor,
+                      isUnpaidQris ? Icons.qr_code_rounded : Icons.arrow_forward_ios_rounded,
+                      size: isUnpaidQris ? 13 : 11,
+                      color: isUnpaidQris ? const Color(0xFF92400E) : serviceColor,
                     ),
                   ],
                 ),

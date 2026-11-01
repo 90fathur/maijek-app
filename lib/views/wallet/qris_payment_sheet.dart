@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/api_client.dart';
 import '../../core/theme.dart';
 import '../../core/utils.dart';
@@ -157,6 +158,43 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
       if (mounted && !isAuto) {
         setState(() => _isChecking = false);
       }
+    }
+  }
+
+  Future<void> _downloadQrImage() async {
+    try {
+      final token = await ApiClient.getToken();
+      String url = '${ApiClient.baseUrl}/user/qris/download/${widget.orderRef}';
+      if (token != null && token.isNotEmpty) {
+        url += '?token=$token';
+      }
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        Get.snackbar(
+          'Mengunduh QRIS',
+          'Gambar QRIS sedang diunduh ke galeri/penyimpanan perangkat Anda.',
+          backgroundColor: const Color(0xFF0E1B38),
+          colorText: Colors.white,
+          icon: const Icon(Icons.download_done_rounded, color: Color(0xFFFDB813)),
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 4),
+        );
+      } else {
+        Get.snackbar(
+          'Gagal Mengunduh',
+          'Tidak dapat membuka tautan pengunduhan QRIS.',
+          backgroundColor: Colors.red.shade800,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Terjadi kendala saat mengunduh gambar QRIS: $e',
+        backgroundColor: Colors.red.shade800,
+        colorText: Colors.white,
+      );
     }
   }
 
@@ -357,49 +395,68 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
             ),
             const SizedBox(height: 18),
 
-            // Tombol Aksi
+            // Tombol Aksi (Unduh QR, Salin Kode, Cek Status)
             Row(
               children: [
-                if (widget.qrisPayload != null && widget.qrisPayload!.isNotEmpty)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _downloadQrImage,
+                    icon: const Icon(Icons.download_rounded, size: 18, color: Color(0xFF0E1B38)),
+                    label: const Text('Unduh QR', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0E1B38))),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: Color(0xFF0E1B38), width: 1.3),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                if (widget.qrisPayload != null && widget.qrisPayload!.isNotEmpty) ...[
+                  const SizedBox(width: 10),
                   Expanded(
-                    flex: 1,
-                    child: OutlinedButton(
+                    child: OutlinedButton.icon(
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: widget.qrisPayload!));
-                        Get.snackbar('Disalin', 'Kode QRIS payload berhasil disalin ke clipboard', backgroundColor: Colors.grey.shade800, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+                        Get.snackbar(
+                          'Disalin',
+                          'Kode QRIS payload berhasil disalin ke clipboard',
+                          backgroundColor: Colors.grey.shade800,
+                          colorText: Colors.white,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
                       },
+                      icon: const Icon(Icons.copy_rounded, size: 16),
+                      label: const Text('Salin Kode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: const Icon(Icons.copy, size: 18),
                     ),
                   ),
-                if (widget.qrisPayload != null && widget.qrisPayload!.isNotEmpty)
-                  const SizedBox(width: 10),
-                Expanded(
-                  flex: 3,
-                  child: ElevatedButton(
-                    onPressed: _isChecking ? null : () => _checkStatus(isAuto: false),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0284C7),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: _isChecking
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.refresh, size: 16),
-                              SizedBox(width: 6),
-                              Text('Cek Status Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                            ],
-                          ),
-                  ),
-                ),
+                ],
               ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isChecking ? null : () => _checkStatus(isAuto: false),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0284C7),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: _isChecking
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.refresh, size: 16),
+                          SizedBox(width: 6),
+                          Text('Cek Status Pembayaran', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                        ],
+                      ),
+              ),
             ),
             const SizedBox(height: 10),
           ],
