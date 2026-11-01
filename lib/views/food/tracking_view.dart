@@ -122,7 +122,7 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
     ever<Map<dynamic, dynamic>>(trackingController.orderData, (order) {
       if (!_hasAutoShownQris && mounted && order.isNotEmpty) {
         bool isQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris';
-        bool isPaid = (order['payment_status'] ?? 'paid') == 'paid';
+        bool isPaid = (order['payment_status'] ?? '').toString().toLowerCase() == 'paid';
         if (isQris && !isPaid) {
           _hasAutoShownQris = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -658,7 +658,7 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
               var order = trackingController.orderData;
               if (order.isEmpty) return const SizedBox.shrink();
               bool isQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris';
-              bool isPaid = (order['payment_status'] ?? 'paid') == 'paid';
+              bool isPaid = (order['payment_status'] ?? '').toString().toLowerCase() == 'paid';
               if (!isQris || isPaid) return const SizedBox.shrink();
 
               double totalPrice = double.tryParse(order['total_price']?.toString() ?? '0') ?? 0;
@@ -819,7 +819,7 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
     String etaSummary = clock.isNotEmpty ? '$clock • $range' : subtitleText;
 
     final bool isQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris';
-    final bool isPaid = (order['payment_status'] ?? 'paid') == 'paid';
+    final bool isPaid = (order['payment_status'] ?? '').toString().toLowerCase() == 'paid';
     final bool isUnpaidQris = isQris && !isPaid;
 
     if (isUnpaidQris && !isCancelled) {
@@ -986,7 +986,7 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
   // 🔹 Tampilan Lengkap / Expanded: Detail resto, driver, timeline, dan tombol tindakan
   Widget _buildExpandedCard(dynamic order, bool isMart, bool isCancelled, String titleText, String subtitleText, BuildContext context) {
     final bool isQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris';
-    final bool isPaid = (order['payment_status'] ?? 'paid') == 'paid';
+    final bool isPaid = (order['payment_status'] ?? '').toString().toLowerCase() == 'paid';
     final bool isUnpaidQris = isQris && !isPaid;
 
     if (isUnpaidQris && !isCancelled) {
@@ -1711,7 +1711,7 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
         ),
       );
     } else if (paymentMethod == 'qris') {
-      final bool isPaid = (order['payment_status'] ?? 'paid') == 'paid';
+      final bool isPaid = (order['payment_status'] ?? '').toString().toLowerCase() == 'paid';
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -1754,24 +1754,12 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                 ),
               ],
             ),
-            if (!isPaid && order['qris_ref'] != null) ...[
+            if (!isPaid) ...[
               const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    QrisPaymentSheet.show(
-                      context: context,
-                      orderRef: order['qris_ref'].toString(),
-                      amount: totalPrice,
-                      qrisPayload: order['qris_payload']?.toString(),
-                      qrisImageBase64: (order['qris_image_base64'] ?? '').toString().replaceFirst('data:image/png;base64,', ''),
-                      checkEndpoint: '/user/food/checkQrisStatus/${order['id']}',
-                      onSuccess: () {
-                        Get.find<FoodTrackingController>().fetchOrderStatus();
-                      },
-                    );
-                  },
+                  onPressed: () => _openQrisSheet(context, order),
                   icon: const Icon(Icons.qr_code_scanner, size: 16),
                   label: const Text('Bayar QRIS Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                   style: ElevatedButton.styleFrom(

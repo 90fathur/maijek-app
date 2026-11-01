@@ -182,7 +182,7 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
         
         status.value = order['status'];
         paymentMethod.value = order['payment_method'] ?? 'cash';
-        paymentStatus.value = order['payment_status'] ?? 'paid';
+        paymentStatus.value = order['payment_status'] ?? (paymentMethod.value == 'qris' ? 'unpaid' : 'paid');
         if (order['qris_ref'] != null) qrisRef.value = order['qris_ref'].toString();
         if (order['qris_payload'] != null) qrisPayload.value = order['qris_payload'].toString();
         if (order['qris_image_base64'] != null) qrisImageBase64.value = order['qris_image_base64'].toString();

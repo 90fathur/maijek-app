@@ -128,9 +128,13 @@ class _QrisPaymentSheetState extends State<QrisPaymentSheet> {
     }
 
     try {
-      String url = widget.checkEndpoint;
-      if (!url.endsWith('/')) url += '/';
-      url += widget.orderRef;
+      String url = widget.checkEndpoint.trim();
+      final bool alreadyHasId = RegExp(r'\/(\d+|[A-Za-z0-9_-]+)$').hasMatch(url) &&
+          url.contains('/checkQrisStatus/');
+      if (!url.contains(widget.orderRef) && !alreadyHasId) {
+        if (!url.endsWith('/')) url += '/';
+        url += widget.orderRef;
+      }
 
       final res = await ApiClient.get(url);
       if (res.statusCode == 200) {

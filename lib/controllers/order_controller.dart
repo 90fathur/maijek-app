@@ -827,7 +827,7 @@ class OrderController extends GetxController {
           'order_id': orderId,
           'qris': qris,
           'payment_method': paymentMethod.value,
-          'payment_status': response['data']?['payment_status'] ?? 'paid',
+          'payment_status': response['data']?['payment_status'] ?? (paymentMethod.value == 'qris' ? 'unpaid' : 'paid'),
         });
       } else if (response['message']?.contains('Saldo Mai-Pay tidak mencukupi') == true) {
         double currentBalance = double.tryParse(_authController.userData['balance']?.toString() ?? '0') ?? 0;

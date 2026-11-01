@@ -532,7 +532,12 @@ class FoodController extends GetxController {
         Get.offNamedUntil(
           '/food/tracking',
           (route) => route.isFirst,
-          arguments: {'order_id': data['data']['order_id']},
+          arguments: {
+            'order_id': data['data']?['order_id'],
+            'qris': data['data']?['qris'],
+            'payment_method': data['data']?['payment_method'] ?? paymentMethod,
+            'payment_status': data['data']?['payment_status'] ?? (paymentMethod == 'qris' ? 'unpaid' : 'paid'),
+          },
         );
         return true;
       } else {

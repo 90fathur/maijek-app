@@ -50,6 +50,20 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
       } else if (Get.arguments['orderId'] != null) {
         orderId = int.tryParse(Get.arguments['orderId'].toString());
       }
+      if (Get.arguments is Map) {
+        var args = Map<String, dynamic>.from(Get.arguments as Map);
+        if (args.containsKey('payment_method') || args.containsKey('qris')) {
+          var initialOrder = Map<String, dynamic>.from(args);
+          initialOrder['id'] = orderId ?? initialOrder['id'];
+          if (args['qris'] != null && args['qris'] is Map) {
+            initialOrder['qris_ref'] = args['qris']['order_ref'];
+            initialOrder['qris_payload'] = args['qris']['qris_payload'];
+            initialOrder['qris_image_base64'] = args['qris']['qris_image_base64'];
+            initialOrder['qris_expires_at'] = args['qris']['qris_expires_at'];
+          }
+          orderData.value = initialOrder;
+        }
+      }
     }
     _loadMarkerIcons();
     _createVehicleIcon();
@@ -134,8 +148,22 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
       if (activeResponse.statusCode == 200) {
         var activeData = json.decode(activeResponse.body);
         if (activeData['data'] != null) {
-          var activeOrder = activeData['data'];
+          var activeOrder = Map<String, dynamic>.from(activeData['data']);
           if (orderId == null || activeOrder['id'].toString() == orderId.toString()) {
+            if (orderData.isNotEmpty) {
+              if (activeOrder['qris_ref'] == null && orderData['qris_ref'] != null) {
+                activeOrder['qris_ref'] = orderData['qris_ref'];
+              }
+              if (activeOrder['qris_payload'] == null && orderData['qris_payload'] != null) {
+                activeOrder['qris_payload'] = orderData['qris_payload'];
+              }
+              if (activeOrder['qris_image_base64'] == null && orderData['qris_image_base64'] != null) {
+                activeOrder['qris_image_base64'] = orderData['qris_image_base64'];
+              }
+              if (activeOrder['qris_expires_at'] == null && orderData['qris_expires_at'] != null) {
+                activeOrder['qris_expires_at'] = orderData['qris_expires_at'];
+              }
+            }
             orderData.value = activeOrder;
             if (Get.isRegistered<HomeController>()) {
               Get.find<HomeController>().activeFoodOrder.value = activeOrder;
@@ -154,7 +182,21 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
         if (detailResponse.statusCode == 200) {
           var detailData = json.decode(detailResponse.body);
           if (detailData['data'] != null) {
-            var detailOrder = detailData['data'];
+            var detailOrder = Map<String, dynamic>.from(detailData['data']);
+            if (orderData.isNotEmpty) {
+              if (detailOrder['qris_ref'] == null && orderData['qris_ref'] != null) {
+                detailOrder['qris_ref'] = orderData['qris_ref'];
+              }
+              if (detailOrder['qris_payload'] == null && orderData['qris_payload'] != null) {
+                detailOrder['qris_payload'] = orderData['qris_payload'];
+              }
+              if (detailOrder['qris_image_base64'] == null && orderData['qris_image_base64'] != null) {
+                detailOrder['qris_image_base64'] = orderData['qris_image_base64'];
+              }
+              if (detailOrder['qris_expires_at'] == null && orderData['qris_expires_at'] != null) {
+                detailOrder['qris_expires_at'] = orderData['qris_expires_at'];
+              }
+            }
             orderData.value = detailOrder;
             String st = (detailOrder['status'] ?? '').toString().toLowerCase();
             if (['completed', 'cancelled', 'delivered'].contains(st)) {
@@ -279,7 +321,7 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
 
     final BitmapDescriptor iconToUse = isCar
         ? (_carMarkerIcon ?? _vehicleIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure))
-        : (_motorcycleMarkerIcon ?? _vehicleIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen));
+        : (_motorcycleMarkerIcon ?? _vehicleIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure));
 
     final String driverTitle = isCar ? 'Kurir Mobil MaiFood' : 'Kurir Motor MaiFood';
 
