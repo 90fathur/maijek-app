@@ -695,6 +695,13 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
     String range = trackingController.etaRangeText.value;
     String etaSummary = clock.isNotEmpty ? '$clock • $range' : subtitleText;
 
+    final vType = (order['vehicle_type'] ?? 'motor').toString().toLowerCase();
+    final bool isCar = vType.contains('car') || vType.contains('mobil');
+    final Color vehicleBrandColor = isCar ? const Color(0xFF0066CC) : AppTheme.primaryNavy;
+    final IconData vehicleIcon = isCancelled
+        ? Icons.cancel_outlined
+        : (isMart ? Icons.shopping_basket : (isCar ? Icons.directions_car_rounded : Icons.two_wheeler_rounded));
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => setState(() => _isCardCollapsed = false),
@@ -723,12 +730,12 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
               Container(
                 padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(
-                  color: isCancelled ? Colors.red.withOpacity(0.12) : Colors.orange.withOpacity(0.12),
+                  color: isCancelled ? Colors.red.withOpacity(0.12) : vehicleBrandColor.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isCancelled ? Icons.cancel_outlined : (isMart ? Icons.shopping_basket : Icons.delivery_dining),
-                  color: isCancelled ? const Color(0xFFDC2626) : Colors.orange.shade800,
+                  vehicleIcon,
+                  color: isCancelled ? const Color(0xFFDC2626) : vehicleBrandColor,
                   size: 24,
                 ),
               ),
@@ -757,13 +764,13 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.orange.shade50,
+                              color: AppTheme.primaryNavy.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: Colors.orange.shade200),
+                              border: Border.all(color: AppTheme.primaryNavy.withOpacity(0.2)),
                             ),
                             child: Text(
                               clock,
-                              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.orange.shade900),
+                              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
                             ),
                           ),
                         ],
@@ -830,6 +837,13 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
 
   // 🔹 Tampilan Lengkap / Expanded: Detail resto, driver, timeline, dan tombol tindakan
   Widget _buildExpandedCard(dynamic order, bool isMart, bool isCancelled, String titleText, String subtitleText, BuildContext context) {
+    final vType = (order['vehicle_type'] ?? 'motor').toString().toLowerCase();
+    final bool isCar = vType.contains('car') || vType.contains('mobil');
+    final Color vehicleBrandColor = isCar ? const Color(0xFF0066CC) : AppTheme.primaryNavy;
+    final IconData vehicleIcon = isCancelled
+        ? Icons.cancel_outlined
+        : (isMart ? Icons.shopping_basket : (isCar ? Icons.directions_car_rounded : Icons.two_wheeler_rounded));
+
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onVerticalDragEnd: (details) {
@@ -900,12 +914,12 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isCancelled ? Colors.red.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                          color: isCancelled ? Colors.red.withOpacity(0.1) : vehicleBrandColor.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          isCancelled ? Icons.cancel_outlined : (isMart ? Icons.shopping_basket : Icons.delivery_dining),
-                          color: isCancelled ? const Color(0xFFDC2626) : Colors.orange,
+                          vehicleIcon,
+                          color: isCancelled ? const Color(0xFFDC2626) : vehicleBrandColor,
                           size: 28,
                         ),
                       ),

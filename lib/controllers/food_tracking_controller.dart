@@ -38,6 +38,8 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
   LatLng? _oldDriverLocation;
   double _currentBearing = 0.0;
   BitmapDescriptor? _vehicleIcon;
+  BitmapDescriptor? _carMarkerIcon;
+  BitmapDescriptor? _motorcycleMarkerIcon;
 
   @override
   void onInit() {
@@ -49,6 +51,7 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
         orderId = int.tryParse(Get.arguments['orderId'].toString());
       }
     }
+    _loadMarkerIcons();
     _createVehicleIcon();
     _setupAnimation();
     
@@ -59,18 +62,40 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
     });
   }
 
+  Future<void> _loadMarkerIcons() async {
+    try {
+      _carMarkerIcon = await BitmapDescriptor.fromAssetImage(
+        const ImageConfiguration(devicePixelRatio: 2.5),
+        'assets/images/car_marker.png',
+      );
+    } catch (e) {
+      debugPrint('Error loading car marker icon in food tracking: $e');
+    }
+    try {
+      _motorcycleMarkerIcon = await BitmapDescriptor.fromAssetImage(
+        const ImageConfiguration(devicePixelRatio: 2.5),
+        'assets/images/motorcycle_marker.png',
+      );
+    } catch (e) {
+      debugPrint('Error loading motorcycle marker icon in food tracking: $e');
+    }
+    if (driverLocation.value != null) {
+      _setMarker(driverLocation.value!, _currentBearing);
+    }
+  }
+
   Future<void> _createVehicleIcon() async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
     const double size = 80;
     
-    // Lingkaran dasar
-    final Paint paint = Paint()..color = Colors.orange.shade700;
+    // Lingkaran dasar: Midnight Deep Navy khas Maijek (#0E1B38)
+    final Paint paint = Paint()..color = const Color(0xFF0E1B38);
     canvas.drawCircle(const Offset(size/2, size/2), size/2, paint);
     
-    // Border putih
+    // Border Emas khas Maijek (#FDB813)
     final Paint borderPaint = Paint()
-      ..color = Colors.white
+      ..color = const Color(0xFFFDB813)
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke;
     canvas.drawCircle(const Offset(size/2, size/2), size/2 - 2, borderPaint);
@@ -249,13 +274,26 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
   }
 
   void _setMarker(LatLng pos, double rotation) {
+    final vType = (orderData['vehicle_type'] ?? 'motor').toString().toLowerCase();
+    final bool isCar = vType.contains('car') || vType.contains('mobil');
+
+    final BitmapDescriptor iconToUse = isCar
+        ? (_carMarkerIcon ?? _vehicleIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure))
+        : (_motorcycleMarkerIcon ?? _vehicleIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen));
+
+    final String driverTitle = isCar ? 'Kurir Mobil MaiFood' : 'Kurir Motor MaiFood';
+
     markers[const MarkerId('driver')] = Marker(
       markerId: const MarkerId('driver'),
       position: pos,
       rotation: rotation,
+      flat: true,
       anchor: const Offset(0.5, 0.5),
-      icon: _vehicleIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-      infoWindow: const InfoWindow(title: 'Driver Maijek'),
+      icon: iconToUse,
+      infoWindow: InfoWindow(
+        title: orderData['driver_name'] ?? driverTitle,
+        snippet: isCar ? 'Kurir Mobil Maijek' : 'Kurir Motor Maijek',
+      ),
     );
   }
 
