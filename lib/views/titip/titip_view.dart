@@ -25,11 +25,13 @@ class _TitipViewState extends State<TitipView> {
   final AuthController authController = Get.find<AuthController>();
   final OrderController orderController = Get.put(OrderController());
   GoogleMapController? mapController;
+  LatLng? _userCurrentLatLng;
 
   @override
   void initState() {
     super.initState();
-    // Force picking state when opened
+    // Reset state & pastikan kendaraan jastip motor
+    orderController.reset();
     orderController.currentState.value = OrderState.idle;
     orderController.selectedVehicle.value = 'mai_titip_motor';
     authController.fetchProfile(); // Refresh saldo
@@ -53,13 +55,21 @@ class _TitipViewState extends State<TitipView> {
         timeLimit: const Duration(seconds: 8),
       );
       LatLng userLatLng = LatLng(position.latitude, position.longitude);
+      _userCurrentLatLng = userLatLng;
       
-      // Set default pickup ke lokasi saat ini
-      orderController.setPickup(userLatLng);
+      // Sesuai alur Mai-Titip: Lokasi Tujuan / Pengantaran otomatis difokuskan ke koordinat pemesan
+      await orderController.setDropoff(userLatLng);
       
-      // Geser peta ke lokasi pengguna jika widget masih aktif
+      // Geser peta fokus langsung ke koordinat pemesan
       if (mounted) {
-        mapController?.animateCamera(CameraUpdate.newLatLngZoom(userLatLng, 15));
+        mapController?.animateCamera(CameraUpdate.newLatLngZoom(userLatLng, 15.5));
+      }
+
+      // Jika toko belanja sudah dipilih, langsung kalkulasi rute
+      if (orderController.pickupLocation.value.latitude != 0) {
+        orderController.calculateRoute();
+        orderController.currentState.value = OrderState.ready;
+        _fitRouteBounds();
       }
     } catch (e) {
       debugPrint("Gagal mengambil lokasi GPS: $e");
@@ -71,47 +81,61 @@ class _TitipViewState extends State<TitipView> {
     _getUserLocation();
   }
 
-  void _onMapTap(LatLng location) {
-    if (orderController.currentState.value == OrderState.idle) {
-      orderController.setPickup(location);
-      orderController.currentState.value = OrderState.selectingDropoff;
-    } else if (orderController.currentState.value == OrderState.selectingDropoff) {
-      orderController.setDropoff(location);
-      orderController.calculateRoute();
-      
-      // Animate Camera to show both markers
+  void _fitRouteBounds() {
+    if (orderController.pickupLocation.value.latitude != 0 && orderController.dropoffLocation.value.latitude != 0) {
       LatLngBounds bounds;
       if (orderController.pickupLocation.value.latitude > orderController.dropoffLocation.value.latitude) {
         bounds = LatLngBounds(southwest: orderController.dropoffLocation.value, northeast: orderController.pickupLocation.value);
       } else {
         bounds = LatLngBounds(southwest: orderController.pickupLocation.value, northeast: orderController.dropoffLocation.value);
       }
-      mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
+      mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
+    }
+  }
+
+  void _onMapTap(LatLng location) {
+    if (orderController.pickupLocation.value.latitude == 0) {
+      // Toko belum ditentukan: ketukan pada peta menentukan titik toko belanja
+      orderController.setPickup(location);
+      if (orderController.dropoffLocation.value.latitude != 0) {
+        orderController.calculateRoute();
+        orderController.currentState.value = OrderState.ready;
+        _fitRouteBounds();
+      } else {
+        orderController.currentState.value = OrderState.selectingDropoff;
+      }
+    } else {
+      // Toko sudah ditentukan: ketukan pada peta memperbarui alamat pengantaran pemesan
+      orderController.setDropoff(location);
+      orderController.calculateRoute();
+      orderController.currentState.value = OrderState.ready;
+      _fitRouteBounds();
     }
   }
 
   Future<void> _openTitipPlacesModal() async {
     final result = await TitipPlacesModal.show(
       context,
-      userLocation: orderController.pickupLocation.value.latitude != 0
-          ? orderController.pickupLocation.value
-          : null,
+      userLocation: _userCurrentLatLng ?? (orderController.dropoffLocation.value.latitude != 0
+          ? orderController.dropoffLocation.value
+          : null),
     );
 
     if (result != null && result['latLng'] != null) {
       final LatLng loc = result['latLng'];
       final String fullAddr = result['fullAddress'] ?? '${result['name']} - ${result['address']}';
 
-      orderController.pickupLocation.value = loc;
+      await orderController.setPickup(loc);
       orderController.pickupAddress.value = fullAddr;
-      orderController.currentState.value = OrderState.selectingDropoff;
 
-      // Geser kamera peta langsung ke titik koordinat tempat tersebut
-      mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 16));
-
-      // Jika alamat pengantaran sudah ada, kalkulasi rute langsung
+      // Alamat pengantaran sudah ada (koordinat pemesan), langsung kalkulasi rute & buka price sheet
       if (orderController.dropoffLocation.value.latitude != 0) {
         orderController.calculateRoute();
+        orderController.currentState.value = OrderState.ready;
+        _fitRouteBounds();
+      } else {
+        orderController.currentState.value = OrderState.selectingDropoff;
+        mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 16));
       }
 
       Get.snackbar(
@@ -254,10 +278,16 @@ class _TitipViewState extends State<TitipView> {
                   onTap: () async {
                     var result = await Get.to(() => const LocationSearchView(), arguments: 'pickup');
                     if (result != null) {
-                      orderController.pickupLocation.value = result['latLng'];
+                      await orderController.setPickup(result['latLng']);
                       orderController.pickupAddress.value = result['address'];
-                      orderController.currentState.value = OrderState.selectingDropoff;
-                      mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 15));
+                      if (orderController.dropoffLocation.value.latitude != 0) {
+                        orderController.calculateRoute();
+                        orderController.currentState.value = OrderState.ready;
+                        _fitRouteBounds();
+                      } else {
+                        orderController.currentState.value = OrderState.selectingDropoff;
+                        mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 15));
+                      }
                     }
                   },
                     child: Row(
@@ -298,15 +328,23 @@ class _TitipViewState extends State<TitipView> {
                         tooltip: 'Geser titik toko di peta',
                         onPressed: () async {
                           final result = await Get.to(() => MapPickerView(
-                            initialPosition: orderController.pickupLocation.value,
+                            initialPosition: orderController.pickupLocation.value.latitude != 0
+                                ? orderController.pickupLocation.value
+                                : (_userCurrentLatLng ?? const LatLng(-3.421586, 119.342158)),
                             initialAddress: orderController.pickupAddress.value,
                             title: 'Tentukan Titik Toko / Belanja',
                           ));
                           if (result != null && result is Map) {
-                            orderController.pickupLocation.value = result['latLng'];
+                            await orderController.setPickup(result['latLng']);
                             orderController.pickupAddress.value = result['address'];
-                            orderController.currentState.value = OrderState.selectingDropoff;
-                            mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 16));
+                            if (orderController.dropoffLocation.value.latitude != 0) {
+                              orderController.calculateRoute();
+                              orderController.currentState.value = OrderState.ready;
+                              _fitRouteBounds();
+                            } else {
+                              orderController.currentState.value = OrderState.selectingDropoff;
+                              mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 16));
+                            }
                           }
                         },
                       ),
@@ -328,9 +366,13 @@ class _TitipViewState extends State<TitipView> {
                   onTap: () async {
                     var result = await Get.to(() => const LocationSearchView(), arguments: 'dropoff');
                     if (result != null) {
-                      orderController.dropoffLocation.value = result['latLng'];
+                      await orderController.setDropoff(result['latLng']);
                       orderController.dropoffAddress.value = result['address'];
-                      orderController.calculateRoute();
+                      if (orderController.pickupLocation.value.latitude != 0) {
+                        orderController.calculateRoute();
+                        orderController.currentState.value = OrderState.ready;
+                        _fitRouteBounds();
+                      }
                     }
                   },
                   child: Row(
@@ -350,7 +392,7 @@ class _TitipViewState extends State<TitipView> {
                           children: [
                             const Text('Alamat Pengantaran Belanja', style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted, fontWeight: FontWeight.w600)),
                             Text(
-                              orderController.dropoffAddress.value.isEmpty ? 'Ketik alamat rumah pengantaran...' : orderController.dropoffAddress.value,
+                              orderController.dropoffAddress.value.isEmpty ? 'Mendeteksi lokasi pemesan...' : orderController.dropoffAddress.value,
                               style: TextStyle(
                                 fontSize: 13.5, 
                                 fontWeight: !isPickup ? FontWeight.bold : FontWeight.normal,
@@ -368,14 +410,18 @@ class _TitipViewState extends State<TitipView> {
                           final result = await Get.to(() => MapPickerView(
                             initialPosition: orderController.dropoffLocation.value.latitude != 0 
                                 ? orderController.dropoffLocation.value 
-                                : orderController.pickupLocation.value,
+                                : (_userCurrentLatLng ?? const LatLng(-3.421586, 119.342158)),
                             initialAddress: orderController.dropoffAddress.value,
                             title: 'Tentukan Alamat Rumah Pengantaran',
                           ));
                           if (result != null && result is Map) {
-                            orderController.dropoffLocation.value = result['latLng'];
+                            await orderController.setDropoff(result['latLng']);
                             orderController.dropoffAddress.value = result['address'];
-                            orderController.calculateRoute();
+                            if (orderController.pickupLocation.value.latitude != 0) {
+                              orderController.calculateRoute();
+                              orderController.currentState.value = OrderState.ready;
+                              _fitRouteBounds();
+                            }
                           }
                         },
                       ),

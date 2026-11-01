@@ -857,6 +857,8 @@ class OrderController extends GetxController {
     currentState.value = OrderState.idle;
     polylines.clear();
     markers.clear();
+    pickupLocation.value = const LatLng(0, 0);
+    dropoffLocation.value = const LatLng(0, 0);
     pickupAddress.value = '';
     dropoffAddress.value = '';
     appliedPromo.value = '';
