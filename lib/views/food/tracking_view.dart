@@ -1107,56 +1107,73 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                       ),
                     ],
                   ),
-                  // Banner Edukasi & Pengingat 1-2 Menit saat status masih 'pending'
+                  // Banner Edukasi & Pengingat saat status masih 'pending'
                   if (order['status'] == 'pending') ...[
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFCD34D), width: 1.2),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFDE68A),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFB45309), size: 16),
+                    GestureDetector(
+                      onTap: isUnpaidQris ? () => _openQrisSheet(context, order) : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isUnpaidQris ? const Color(0xFFFFFBEB) : const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isUnpaidQris ? const Color(0xFFF59E0B) : const Color(0xFFFCD34D),
+                            width: 1.2,
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Mohon jangan menutup aplikasi dulu ya!',
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF92400E),
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  isMart
-                                      ? 'Mungkin butuh waktu 1–2 menit hingga pihak toko memeriksa stok & mengonfirmasi pesanan Anda.'
-                                      : 'Mungkin butuh waktu 1–2 menit hingga kasir resto memeriksa & mengonfirmasi pesanan Anda.',
-                                  style: const TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF78350F),
-                                    height: 1.35,
-                                  ),
-                                ),
-                              ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: isUnpaidQris ? const Color(0xFFFDE68A) : const Color(0xFFFDE68A),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                isUnpaidQris ? Icons.qr_code_scanner_rounded : Icons.hourglass_top_rounded,
+                                color: const Color(0xFFB45309),
+                                size: 16,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isUnpaidQris ? 'Selesaikan Pembayaran QRIS Anda' : 'Mohon jangan menutup aplikasi dulu ya!',
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF92400E),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    isUnpaidQris
+                                        ? 'Ketuk di sini untuk scan QRIS. Pesanan akan otomatis diteruskan ke resto & dicarikan kurir setelah pembayaran lunas.'
+                                        : (isMart
+                                            ? 'Mungkin butuh waktu 1–2 menit hingga pihak toko memeriksa stok & mengonfirmasi pesanan Anda.'
+                                            : 'Mungkin butuh waktu 1–2 menit hingga kasir resto memeriksa & mengonfirmasi pesanan Anda.'),
+                                    style: const TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF78350F),
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isUnpaidQris)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 4, left: 4),
+                                child: Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Color(0xFFB45309)),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
