@@ -40,15 +40,39 @@ class _WithdrawViewState extends State<WithdrawView> {
   ];
 
   final List<int> quickAmounts = [25000, 50000, 100000, 200000];
+  Worker? _savedAccountWorker;
 
   @override
   void initState() {
     super.initState();
     walletController.fetchWithdrawStatus();
+    _applySavedAccount(walletController.savedAccount.value);
+    _savedAccountWorker = ever(walletController.savedAccount, (val) {
+      if (mounted) {
+        _applySavedAccount(val);
+      }
+    });
+  }
+
+  void _applySavedAccount(Map<String, dynamic>? acc) {
+    if (acc != null && acc['account_number'] != null && acc['account_number'].toString().isNotEmpty) {
+      if (accountNumberController.text.isEmpty) {
+        accountNumberController.text = acc['account_number'].toString();
+      }
+      if (accountNameController.text.isEmpty && acc['account_name'] != null) {
+        accountNameController.text = acc['account_name'].toString();
+      }
+      if (acc['bank_name'] != null && bankOptions.any((b) => b['name'] == acc['bank_name'])) {
+        setState(() {
+          selectedBank = acc['bank_name'];
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
+    _savedAccountWorker?.dispose();
     amountController.dispose();
     accountNumberController.dispose();
     accountNameController.dispose();
@@ -418,9 +442,41 @@ class _WithdrawViewState extends State<WithdrawView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            isEwallet ? 'Informasi Akun $selectedBank' : 'Informasi Rekening $selectedBank',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  isEwallet ? 'Informasi Akun $selectedBank' : 'Informasi Rekening $selectedBank',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ),
+              Obx(() {
+                final saved = walletController.savedAccount.value;
+                if (saved != null && (saved['account_number'] ?? '').toString().isNotEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, size: 12, color: Colors.green.shade700),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Tersimpan',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade700),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
+            ],
           ),
           const SizedBox(height: 12),
 

@@ -9,6 +9,7 @@ class WalletController extends GetxController {
 
   var transactions = <dynamic>[].obs;
   var withdrawHistory = <dynamic>[].obs;
+  var savedAccount = Rxn<Map<String, dynamic>>();
   var isLoading = false.obs;
   var isTopUpLoading = false.obs;
   var isWithdrawLoading = false.obs;
@@ -44,6 +45,9 @@ class WalletController extends GetxController {
         var body = jsonDecode(response.body);
         if (body['data'] != null) {
           withdrawHistory.value = body['data'];
+        }
+        if (body['saved_account'] != null) {
+          savedAccount.value = Map<String, dynamic>.from(body['saved_account']);
         }
       }
     } catch (e) {
