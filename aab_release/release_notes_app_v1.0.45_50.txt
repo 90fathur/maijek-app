@@ -1,0 +1,35 @@
+============================================================
+CATATAN RILIS APLIKASI PELANGGAN MAIJEK (v1.0.45+50)
+============================================================
+
+Tanggal Rilis : 02 November 2026
+Versi Aplikasi: 1.0.45
+Version Code  : 50
+File AAB      : aab_release/maijek_app_v1.0.45_50.aab
+
+FITUR & PEMBARUAN UTAMA:
+1. 🛡️ Penyempurnaan Alur & Proteksi Ketat Pembayaran QRIS (MaiFood):
+   - Memastikan kasir restoran dan kurir hanya menerima dan memproses pesanan setelah pembayaran QRIS pelanggan 100% terkonfirmasi lunas.
+   - Restoran tidak lagi menerima pesanan mendahului pembayaran pelanggan via QRIS.
+   - Peningkatan banner panduan interaktif pada halaman tracking ketika pesanan menunggu pembayaran QRIS, lengkap dengan tombol akses cepat ke modal QRIS, timer 15 menit, dan tombol unduh QR.
+
+2. 💳 Fitur Cerdas Penyimpanan Rekening & E-Wallet (Smart Saved Account):
+   - Sistem kini otomatis mengingat nomor rekening bank atau dompet digital (DANA, OVO, GoPay, ShopeePay) yang pernah digunakan untuk penarikan saldo dompet Mai-Pay tanpa perlu mengetik ulang setiap saat.
+
+3. ⚡ Sinkronisasi Real-Time Gateway QRIS NotivGo:
+   - Peningkatan auto-check dan webhook callback pembayaran QRIS secara real-time, mendeteksi pelunasan dalam hitungan detik dan otomatis meneruskan pesanan ke kasir resto.
+
+4. 🚀 Peningkatan Performa & Stabilitas Aplikasi:
+   - Optimalisasi visual peta pelacakan kurir dan transisi layar pesanan aktif.
+   - Peningkatan responsivitas jaringan dan penanganan error timeout.
+
+============================================================
+--- TEKS SINGKAT UNTUK GOOGLE PLAY CONSOLE (What's New / Ada yang baru) ---
+Pembaruan v1.0.45:
+• Penyempurnaan alur & proteksi ketat pesanan QRIS: resto memproses pesanan setelah pembayaran lunas terverifikasi.
+• Banner panduan interaktif baru saat menunggu pembayaran QRIS pada pelacakan pesanan.
+• Penyimpanan cerdas rekening bank & nomor e-wallet untuk kemudahan transaksi dompet Mai-Pay.
+• Peningkatan kecepatan deteksi pelunasan QRIS secara instan & real-time.
+• Peningkatan stabilitas dan performa aplikasi.
+============================================================
+
