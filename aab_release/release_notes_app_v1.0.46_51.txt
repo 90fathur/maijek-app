@@ -1,0 +1,32 @@
+============================================================
+CATATAN RILIS APLIKASI PELANGGAN MAIJEK (v1.0.46+51)
+============================================================
+
+Tanggal Rilis : 07 November 2026
+Versi Aplikasi: 1.0.46
+Version Code  : 51
+File AAB      : aab_release/maijek_app_v1.0.46_51.aab
+
+FITUR & PEMBARUAN UTAMA:
+1. 📍 Peningkatan Akurasi & Interaktivitas Peta Mai-Titip (Jastip):
+   - Pemilihan lokasi toko dari database/tempat populer kini menampilkan pin interaktif tepat di titik toko dengan badge nama toko.
+   - Pengguna dapat leluasa menggeser peta di layar yang sama ("in-place" tanpa berpindah halaman) untuk menyesuaikan titik toko belanja secara presisi sebelum mengonfirmasi.
+   - Penentuan titik rumah/pengantaran belanja juga dapat digeser dan disesuaikan langsung di peta tanpa membuka layar baru.
+   - Penambahan kartu ringkasan rute lengkap dengan tombol "Ubah Titik" pada Toko dan Alamat Antar untuk kemudahan revisi sebelum pesanan dibuat.
+
+2. 🛡️ Penyempurnaan Alur & Proteksi Pembayaran QRIS:
+   - Restoran dan kurir hanya menerima serta memproses pesanan setelah pembayaran QRIS lunas terverifikasi.
+   - Proteksi ganda pada pesanan berstatus menunggu pembayaran.
+
+3. 🚀 Peningkatan Performa Peta & Animasi:
+   - Animasi pin mengambang yang responsif dan ringan saat peta digeser.
+   - Optimalisasi konsumsi memori dan kestabilan antarmuka pengguna.
+
+============================================================
+--- TEKS SINGKAT UNTUK GOOGLE PLAY CONSOLE (What's New / Ada yang baru) ---
+Pembaruan v1.0.46:
+• Peningkatan akurasi peta Mai-Titip: geser titik toko dan titik rumah langsung di peta tanpa berpindah halaman.
+• Fitur "Ubah Titik" fleksibel untuk toko belanja dan alamat pengantaran.
+• Peningkatan stabilitas dan responsivitas navigasi peta.
+============================================================
+
