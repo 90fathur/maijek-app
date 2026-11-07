@@ -9,7 +9,6 @@ import '../../controllers/auth_controller.dart';
 import '../promo/promo_modal.dart';
 import '../../controllers/order_controller.dart';
 import '../home/location_search_view.dart';
-import '../home/map_picker_view.dart';
 import '../wallet/topup_view.dart';
 import '../wallet/insufficient_balance_sheet.dart';
 import 'titip_places_modal.dart';
@@ -26,6 +25,10 @@ class _TitipViewState extends State<TitipView> {
   final OrderController orderController = Get.put(OrderController());
   GoogleMapController? mapController;
   LatLng? _userCurrentLatLng;
+  LatLng? _currentMapCenter;
+  final ValueNotifier<bool> _isMapDragging = ValueNotifier<bool>(false);
+  String _storeNameFromDb = '';
+  bool _isGeocodingAddress = false;
 
   @override
   void initState() {
@@ -35,6 +38,12 @@ class _TitipViewState extends State<TitipView> {
     orderController.currentState.value = OrderState.idle;
     orderController.selectedVehicle.value = 'mai_titip_motor';
     authController.fetchProfile(); // Refresh saldo
+  }
+
+  @override
+  void dispose() {
+    _isMapDragging.dispose();
+    super.dispose();
   }
 
   Future<void> _getUserLocation() async {
@@ -56,20 +65,16 @@ class _TitipViewState extends State<TitipView> {
       );
       LatLng userLatLng = LatLng(position.latitude, position.longitude);
       _userCurrentLatLng = userLatLng;
+      _currentMapCenter ??= userLatLng;
       
       // Sesuai alur Mai-Titip: Lokasi Tujuan / Pengantaran otomatis difokuskan ke koordinat pemesan
-      await orderController.setDropoff(userLatLng);
-      
-      // Geser peta fokus langsung ke koordinat pemesan
-      if (mounted) {
-        mapController?.animateCamera(CameraUpdate.newLatLngZoom(userLatLng, 15.5));
+      if (orderController.dropoffLocation.value.latitude == 0) {
+        await orderController.setDropoff(userLatLng);
       }
-
-      // Jika toko belanja sudah dipilih, langsung kalkulasi rute
-      if (orderController.pickupLocation.value.latitude != 0) {
-        orderController.calculateRoute();
-        orderController.currentState.value = OrderState.ready;
-        _fitRouteBounds();
+      
+      // Geser peta fokus langsung ke koordinat pemesan jika toko belum ditentukan
+      if (mounted && orderController.pickupLocation.value.latitude == 0) {
+        mapController?.animateCamera(CameraUpdate.newLatLngZoom(userLatLng, 16));
       }
     } catch (e) {
       debugPrint("Gagal mengambil lokasi GPS: $e");
@@ -93,24 +98,56 @@ class _TitipViewState extends State<TitipView> {
     }
   }
 
-  void _onMapTap(LatLng location) {
-    if (orderController.pickupLocation.value.latitude == 0) {
-      // Toko belum ditentukan: ketukan pada peta menentukan titik toko belanja
-      orderController.setPickup(location);
-      if (orderController.dropoffLocation.value.latitude != 0) {
-        orderController.calculateRoute();
-        orderController.currentState.value = OrderState.ready;
-        _fitRouteBounds();
-      } else {
-        orderController.currentState.value = OrderState.selectingDropoff;
-      }
-    } else {
-      // Toko sudah ditentukan: ketukan pada peta memperbarui alamat pengantaran pemesan
-      orderController.setDropoff(location);
-      orderController.calculateRoute();
-      orderController.currentState.value = OrderState.ready;
-      _fitRouteBounds();
+  void _onCameraMove(CameraPosition position) {
+    _currentMapCenter = position.target;
+    if (!_isMapDragging.value) {
+      _isMapDragging.value = true;
     }
+  }
+
+  void _onCameraIdle() async {
+    if (_isMapDragging.value) {
+      _isMapDragging.value = false;
+    }
+    if (_currentMapCenter == null) return;
+
+    final state = orderController.currentState.value;
+    if (state == OrderState.idle) {
+      orderController.pickupLocation.value = _currentMapCenter!;
+      // Jika tidak ada nama toko khusus dari database/modal, reverse-geocode alamatnya
+      if (_storeNameFromDb.isEmpty) {
+        _reverseGeocodeCenter(isPickup: true);
+      }
+    } else if (state == OrderState.selectingDropoff) {
+      orderController.dropoffLocation.value = _currentMapCenter!;
+      _reverseGeocodeCenter(isPickup: false);
+    }
+  }
+
+  Future<void> _reverseGeocodeCenter({required bool isPickup}) async {
+    if (_isGeocodingAddress || _currentMapCenter == null) return;
+    _isGeocodingAddress = true;
+    try {
+      String addr = await orderController.getAddressFromLatLng(_currentMapCenter!);
+      if (mounted) {
+        if (isPickup) {
+          orderController.pickupAddress.value = addr;
+        } else {
+          orderController.dropoffAddress.value = addr;
+        }
+      }
+    } catch (e) {
+      debugPrint('Reverse geocode error: $e');
+    } finally {
+      _isGeocodingAddress = false;
+    }
+  }
+
+  void _onMapTap(LatLng location) {
+    if (orderController.currentState.value == OrderState.ready) return;
+    // Animasikan kamera ke titik yang diketuk agar pin tengah tepat berada di sana
+    _currentMapCenter = location;
+    mapController?.animateCamera(CameraUpdate.newLatLng(location));
   }
 
   Future<void> _openTitipPlacesModal() async {
@@ -123,31 +160,29 @@ class _TitipViewState extends State<TitipView> {
 
     if (result != null && result['latLng'] != null) {
       final LatLng loc = result['latLng'];
-      final String fullAddr = result['fullAddress'] ?? '${result['name']} - ${result['address']}';
+      final String storeName = result['name'] ?? 'Toko Pilihan';
+      final String fullAddr = result['fullAddress'] ?? '$storeName - ${result['address'] ?? ''}';
 
-      await orderController.setPickup(loc);
+      _storeNameFromDb = storeName;
+      _currentMapCenter = loc;
+      orderController.pickupLocation.value = loc;
       orderController.pickupAddress.value = fullAddr;
+      orderController.removePickupMarker(); // Hapus marker statis agar pin tengah leluasa digeser
 
-      // Alamat pengantaran sudah ada (koordinat pemesan), langsung kalkulasi rute & buka price sheet
-      if (orderController.dropoffLocation.value.latitude != 0) {
-        orderController.calculateRoute();
-        orderController.currentState.value = OrderState.ready;
-        _fitRouteBounds();
-      } else {
-        orderController.currentState.value = OrderState.selectingDropoff;
-        mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 16));
-      }
+      // Tetap di mode idle agar pengguna bisa melihat titik dan menggeser peta di halaman ini
+      orderController.currentState.value = OrderState.idle;
+      mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 17));
 
       Get.snackbar(
         'Lokasi Toko Dipilih',
-        result['name'] ?? 'Titik toko berhasil diarahkan ke lokasi pilihan.',
+        'Titik diarahkan ke $storeName. Anda dapat menggeser peta untuk menyesuaikan titiknya.',
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.teal.shade800,
         colorText: Colors.white,
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 3),
         margin: const EdgeInsets.all(12),
         borderRadius: 10,
-        icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+        icon: const Icon(Icons.touch_app_rounded, color: Colors.white),
       );
     }
   }
@@ -173,19 +208,125 @@ class _TitipViewState extends State<TitipView> {
               myLocationButtonEnabled: false, // Disabled to use custom FAB
               zoomControlsEnabled: false,
               onMapCreated: _onMapCreated,
+              onCameraMove: _onCameraMove,
+              onCameraIdle: _onCameraIdle,
               onTap: _onMapTap,
               markers: Set<Marker>.of(orderController.markers.values),
               polylines: Set<Polyline>.of(orderController.polylines.values),
             )),
 
-          // 2. Floating App Bar (Back Button)
+          // 2. Center Marker (Floating Pin for Map Dragging)
+          Obx(() {
+            final state = orderController.currentState.value;
+            if (state != OrderState.idle && state != OrderState.selectingDropoff) {
+              return const SizedBox.shrink();
+            }
+
+            final bool isPickup = (state == OrderState.idle);
+            final String title = isPickup
+                ? (_storeNameFromDb.isNotEmpty ? 'Toko: $_storeNameFromDb' : 'Titik Toko / Belanja')
+                : 'Titik Rumah / Pengantaran';
+            final Color pinColor = isPickup ? Colors.teal.shade700 : Colors.red.shade700;
+            final IconData pinIcon = isPickup ? Icons.storefront_rounded : Icons.home_rounded;
+
+            return IgnorePointer(
+              ignoring: true,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 36.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Badge Keterangan Titik
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        decoration: BoxDecoration(
+                          color: isPickup ? Colors.teal.shade900 : const Color(0xFF1E293B),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3)),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(pinIcon, color: Colors.white, size: 14),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    title,
+                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            ValueListenableBuilder<bool>(
+                              valueListenable: _isMapDragging,
+                              builder: (context, dragging, _) {
+                                return Text(
+                                  dragging
+                                      ? 'Lepaskan peta untuk mengunci titik'
+                                      : (isPickup ? 'Geser peta ke lokasi toko yang pas' : 'Geser peta ke titik rumah Anda'),
+                                  style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 10),
+                                  textAlign: TextAlign.center,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      // Pin Icon dengan animasi mengangkat saat peta digeser
+                      ValueListenableBuilder<bool>(
+                        valueListenable: _isMapDragging,
+                        builder: (context, dragging, _) {
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            transform: Matrix4.translationValues(0, dragging ? -12 : 0, 0),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Icon(Icons.location_on, size: 48, color: pinColor),
+                                Positioned(
+                                  top: 8,
+                                  child: Icon(pinIcon, size: 18, color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      // Titik bayangan tanah
+                      Container(
+                        width: 10,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                          color: Colors.black38,
+                          borderRadius: BorderRadius.all(Radius.elliptical(10, 5)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          // 3. Floating App Bar (Back Button)
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
             left: 16,
             child: _buildBackButton(),
           ),
 
-          // 3. My Location FAB
+          // 4. My Location FAB
           Positioned(
             top: MediaQuery.of(context).padding.top + 80, // Moved to top right to avoid overlap
             right: 16,
@@ -193,14 +334,20 @@ class _TitipViewState extends State<TitipView> {
               ? FloatingActionButton(
                   mini: true,
                   backgroundColor: Colors.white,
-                  onPressed: _getUserLocation,
+                  onPressed: () async {
+                    await _getUserLocation();
+                    if (_userCurrentLatLng != null) {
+                      _currentMapCenter = _userCurrentLatLng;
+                      mapController?.animateCamera(CameraUpdate.newLatLngZoom(_userCurrentLatLng!, 17));
+                    }
+                  },
                   child: const Icon(Icons.my_location, color: AppTheme.primaryBlue),
                 )
               : const SizedBox.shrink()
             ),
           ),
 
-          // 4. Dynamic Bottom Sheet
+          // 5. Dynamic Bottom Sheet
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: Obx(() {
@@ -219,13 +366,24 @@ class _TitipViewState extends State<TitipView> {
   Widget _buildBackButton() {
     return InkWell(
       onTap: () {
-        if (orderController.currentState.value == OrderState.selectingDropoff) {
-           orderController.currentState.value = OrderState.idle;
-        } else if (orderController.currentState.value == OrderState.ready) {
-           orderController.reset();
-           orderController.currentState.value = OrderState.idle;
+        if (orderController.currentState.value == OrderState.ready) {
+          // Dari checkout kembali ke penentuan titik antar
+          orderController.removeDropoffMarker();
+          orderController.currentState.value = OrderState.selectingDropoff;
+          if (orderController.dropoffLocation.value.latitude != 0) {
+            _currentMapCenter = orderController.dropoffLocation.value;
+            mapController?.animateCamera(CameraUpdate.newLatLngZoom(orderController.dropoffLocation.value, 17));
+          }
+        } else if (orderController.currentState.value == OrderState.selectingDropoff) {
+          // Dari titik antar kembali ke penentuan titik toko
+          orderController.removePickupMarker();
+          orderController.currentState.value = OrderState.idle;
+          if (orderController.pickupLocation.value.latitude != 0) {
+            _currentMapCenter = orderController.pickupLocation.value;
+            mapController?.animateCamera(CameraUpdate.newLatLngZoom(orderController.pickupLocation.value, 17));
+          }
         } else {
-           Get.back(); // Back to Dashboard
+          Get.back(); // Back to Dashboard
         }
       },
       child: Container(
@@ -276,21 +434,28 @@ class _TitipViewState extends State<TitipView> {
                 // Pickup / Toko Row
                 GestureDetector(
                   onTap: () async {
-                    var result = await Get.to(() => const LocationSearchView(), arguments: 'pickup');
-                    if (result != null) {
-                      await orderController.setPickup(result['latLng']);
-                      orderController.pickupAddress.value = result['address'];
-                      if (orderController.dropoffLocation.value.latitude != 0) {
-                        orderController.calculateRoute();
-                        orderController.currentState.value = OrderState.ready;
-                        _fitRouteBounds();
-                      } else {
-                        orderController.currentState.value = OrderState.selectingDropoff;
-                        mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 15));
+                    if (!isPickup) {
+                      orderController.currentState.value = OrderState.idle;
+                      orderController.removePickupMarker();
+                      if (orderController.pickupLocation.value.latitude != 0) {
+                        _currentMapCenter = orderController.pickupLocation.value;
+                        mapController?.animateCamera(CameraUpdate.newLatLngZoom(orderController.pickupLocation.value, 17));
                       }
+                      return;
+                    }
+                    var result = await Get.to(() => const LocationSearchView(), arguments: 'pickup');
+                    if (result != null && result is Map) {
+                      LatLng loc = result['latLng'];
+                      _storeNameFromDb = '';
+                      _currentMapCenter = loc;
+                      orderController.pickupLocation.value = loc;
+                      orderController.pickupAddress.value = result['address'] ?? 'Toko Pilihan';
+                      orderController.currentState.value = OrderState.idle;
+                      orderController.removePickupMarker();
+                      mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 17));
                     }
                   },
-                    child: Row(
+                  child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(6),
@@ -326,26 +491,14 @@ class _TitipViewState extends State<TitipView> {
                       IconButton(
                         icon: Icon(Icons.map_outlined, color: Colors.teal.shade700, size: 20),
                         tooltip: 'Geser titik toko di peta',
-                        onPressed: () async {
-                          final result = await Get.to(() => MapPickerView(
-                            initialPosition: orderController.pickupLocation.value.latitude != 0
-                                ? orderController.pickupLocation.value
-                                : (_userCurrentLatLng ?? const LatLng(-3.421586, 119.342158)),
-                            initialAddress: orderController.pickupAddress.value,
-                            title: 'Tentukan Titik Toko / Belanja',
-                          ));
-                          if (result != null && result is Map) {
-                            await orderController.setPickup(result['latLng']);
-                            orderController.pickupAddress.value = result['address'];
-                            if (orderController.dropoffLocation.value.latitude != 0) {
-                              orderController.calculateRoute();
-                              orderController.currentState.value = OrderState.ready;
-                              _fitRouteBounds();
-                            } else {
-                              orderController.currentState.value = OrderState.selectingDropoff;
-                              mapController?.animateCamera(CameraUpdate.newLatLngZoom(result['latLng'], 16));
-                            }
-                          }
+                        onPressed: () {
+                          orderController.currentState.value = OrderState.idle;
+                          orderController.removePickupMarker();
+                          LatLng target = orderController.pickupLocation.value.latitude != 0
+                              ? orderController.pickupLocation.value
+                              : (_userCurrentLatLng ?? const LatLng(-3.421586, 119.342158));
+                          _currentMapCenter = target;
+                          mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 17));
                         },
                       ),
                     ],
@@ -364,15 +517,24 @@ class _TitipViewState extends State<TitipView> {
                 // Dropoff / Rumah Row
                 GestureDetector(
                   onTap: () async {
-                    var result = await Get.to(() => const LocationSearchView(), arguments: 'dropoff');
-                    if (result != null) {
-                      await orderController.setDropoff(result['latLng']);
-                      orderController.dropoffAddress.value = result['address'];
-                      if (orderController.pickupLocation.value.latitude != 0) {
-                        orderController.calculateRoute();
-                        orderController.currentState.value = OrderState.ready;
-                        _fitRouteBounds();
+                    if (isPickup) {
+                      orderController.currentState.value = OrderState.selectingDropoff;
+                      orderController.removeDropoffMarker();
+                      if (orderController.dropoffLocation.value.latitude != 0) {
+                        _currentMapCenter = orderController.dropoffLocation.value;
+                        mapController?.animateCamera(CameraUpdate.newLatLngZoom(orderController.dropoffLocation.value, 17));
                       }
+                      return;
+                    }
+                    var result = await Get.to(() => const LocationSearchView(), arguments: 'dropoff');
+                    if (result != null && result is Map) {
+                      LatLng loc = result['latLng'];
+                      _currentMapCenter = loc;
+                      orderController.dropoffLocation.value = loc;
+                      orderController.dropoffAddress.value = result['address'] ?? 'Alamat Rumah';
+                      orderController.currentState.value = OrderState.selectingDropoff;
+                      orderController.removeDropoffMarker();
+                      mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 17));
                     }
                   },
                   child: Row(
@@ -406,23 +568,14 @@ class _TitipViewState extends State<TitipView> {
                       IconButton(
                         icon: const Icon(Icons.map_outlined, color: Colors.red, size: 20),
                         tooltip: 'Geser tujuan di peta',
-                        onPressed: () async {
-                          final result = await Get.to(() => MapPickerView(
-                            initialPosition: orderController.dropoffLocation.value.latitude != 0 
-                                ? orderController.dropoffLocation.value 
-                                : (_userCurrentLatLng ?? const LatLng(-3.421586, 119.342158)),
-                            initialAddress: orderController.dropoffAddress.value,
-                            title: 'Tentukan Alamat Rumah Pengantaran',
-                          ));
-                          if (result != null && result is Map) {
-                            await orderController.setDropoff(result['latLng']);
-                            orderController.dropoffAddress.value = result['address'];
-                            if (orderController.pickupLocation.value.latitude != 0) {
-                              orderController.calculateRoute();
-                              orderController.currentState.value = OrderState.ready;
-                              _fitRouteBounds();
-                            }
-                          }
+                        onPressed: () {
+                          orderController.currentState.value = OrderState.selectingDropoff;
+                          orderController.removeDropoffMarker();
+                          LatLng target = orderController.dropoffLocation.value.latitude != 0 
+                              ? orderController.dropoffLocation.value 
+                              : (_userCurrentLatLng ?? const LatLng(-3.421586, 119.342158));
+                          _currentMapCenter = target;
+                          mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 17));
                         },
                       ),
                     ],
@@ -513,19 +666,85 @@ class _TitipViewState extends State<TitipView> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (isPickup) {
+                  // Validasi lokasi toko
+                  if (orderController.pickupLocation.value.latitude == 0) {
+                    if (_currentMapCenter != null) {
+                      orderController.pickupLocation.value = _currentMapCenter!;
+                      if (orderController.pickupAddress.value.isEmpty) {
+                        orderController.pickupAddress.value = await orderController.getAddressFromLatLng(_currentMapCenter!);
+                      }
+                    } else {
+                      Get.snackbar('Peringatan', 'Silakan tentukan titik toko belanja terlebih dahulu.',
+                          snackPosition: SnackPosition.TOP, backgroundColor: Colors.orange.shade800, colorText: Colors.white);
+                      return;
+                    }
+                  }
+
+                  // Kunci marker toko
+                  orderController.updatePickupMarker();
+
+                  // Pindah ke pemilihan tujuan antar
                   orderController.currentState.value = OrderState.selectingDropoff;
+
+                  // Geser peta fokus ke tujuan/pemesan
+                  LatLng targetDropoff = orderController.dropoffLocation.value.latitude != 0
+                      ? orderController.dropoffLocation.value
+                      : (_userCurrentLatLng ?? orderController.pickupLocation.value);
+                  _currentMapCenter = targetDropoff;
+                  mapController?.animateCamera(CameraUpdate.newLatLngZoom(targetDropoff, 17));
+
+                  Get.snackbar(
+                    'Titik Toko Dikonfirmasi',
+                    'Sekarang geser peta untuk menentukan titik rumah/pengantaran belanja.',
+                    snackPosition: SnackPosition.TOP,
+                    backgroundColor: Colors.teal.shade800,
+                    colorText: Colors.white,
+                    duration: const Duration(seconds: 3),
+                    margin: const EdgeInsets.all(12),
+                    borderRadius: 10,
+                    icon: const Icon(Icons.home_rounded, color: Colors.white),
+                  );
+                } else {
+                  // Validasi lokasi dropoff
+                  if (orderController.dropoffLocation.value.latitude == 0) {
+                    if (_currentMapCenter != null) {
+                      orderController.dropoffLocation.value = _currentMapCenter!;
+                      if (orderController.dropoffAddress.value.isEmpty) {
+                        orderController.dropoffAddress.value = await orderController.getAddressFromLatLng(_currentMapCenter!);
+                      }
+                    } else {
+                      Get.snackbar('Peringatan', 'Silakan tentukan alamat pengantaran belanja terlebih dahulu.',
+                          snackPosition: SnackPosition.TOP, backgroundColor: Colors.orange.shade800, colorText: Colors.white);
+                      return;
+                    }
+                  }
+
+                  // Kunci marker dropoff
+                  orderController.updateDropoffMarker();
+
+                  // Hitung rute dan buka Price Sheet
+                  await orderController.calculateRoute();
+                  orderController.currentState.value = OrderState.ready;
+                  _fitRouteBounds();
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryBlue,
+                backgroundColor: isPickup ? Colors.teal.shade700 : AppTheme.primaryBlue,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text(
-                isPickup ? 'Konfirmasi Lokasi Toko' : 'Konfirmasi Alamat Pengantaran', 
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(isPickup ? Icons.arrow_forward_rounded : Icons.check_circle_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    isPickup ? 'Konfirmasi Titik Toko & Lanjut ➔' : 'Konfirmasi Titik Antar & Cek Ongkir ➔', 
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)
+                  ),
+                ],
               ),
             ),
           )
@@ -546,6 +765,99 @@ class _TitipViewState extends State<TitipView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Route Summary Card with "Ubah Titik"
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundLight,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              children: [
+                // Pickup Row
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(color: Colors.teal.shade50, shape: BoxShape.circle),
+                      child: Icon(Icons.storefront_rounded, color: Colors.teal.shade700, size: 16),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Toko Belanja', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.w600)),
+                          Obx(() => Text(
+                            orderController.pickupAddress.value.isEmpty ? 'Toko Pilihan' : orderController.pickupAddress.value,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        orderController.removePickupMarker();
+                        orderController.currentState.value = OrderState.idle;
+                        _currentMapCenter = orderController.pickupLocation.value;
+                        mapController?.animateCamera(CameraUpdate.newLatLngZoom(orderController.pickupLocation.value, 17));
+                      },
+                      child: const Text('Ubah Titik', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.teal)),
+                    ),
+                  ],
+                ),
+                Divider(height: 12, thickness: 0.8, color: Colors.grey.shade200),
+                // Dropoff Row
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+                      child: Icon(Icons.home_rounded, color: Colors.red.shade700, size: 16),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Alamat Pengantaran', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.w600)),
+                          Obx(() => Text(
+                            orderController.dropoffAddress.value.isEmpty ? 'Alamat Rumah' : orderController.dropoffAddress.value,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        orderController.removeDropoffMarker();
+                        orderController.currentState.value = OrderState.selectingDropoff;
+                        _currentMapCenter = orderController.dropoffLocation.value;
+                        mapController?.animateCamera(CameraUpdate.newLatLngZoom(orderController.dropoffLocation.value, 17));
+                      },
+                      child: const Text('Ubah Titik', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           const Text('Pilihan Kendaraan Mai-Titip', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           

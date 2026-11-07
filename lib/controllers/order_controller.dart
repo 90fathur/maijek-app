@@ -597,6 +597,28 @@ class OrderController extends GetxController {
     dropoffAddress.value = address;
   }
 
+  Future<String> getAddressFromLatLng(LatLng loc) => _getAddressFromLatLng(loc);
+
+  void updatePickupMarker() {
+    if (pickupLocation.value.latitude != 0) {
+      _updateMarker('pickup', pickupLocation.value, 'Toko Belanja', BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan));
+    }
+  }
+
+  void removePickupMarker() {
+    markers.remove(const MarkerId('pickup'));
+  }
+
+  void updateDropoffMarker() {
+    if (dropoffLocation.value.latitude != 0) {
+      _updateMarker('dropoff', dropoffLocation.value, 'Alamat Pengantaran', BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed));
+    }
+  }
+
+  void removeDropoffMarker() {
+    markers.remove(const MarkerId('dropoff'));
+  }
+
   Future<String> _getAddressFromLatLng(LatLng loc) async {
     try {
       String url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=${loc.latitude},${loc.longitude}&key=$googleApiKey';
