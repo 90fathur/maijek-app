@@ -1,0 +1,23 @@
+CATATAN RILIS APLIKASI PENUMPANG (MAIJEK) - v1.0.47+52
+Tanggal Rilis: 8 November 2026
+
+FITUR BARU & PENYEMPURNAAN SISTEM:
+
+1. FITUR CERDAS MULTI-ORDER (PESAN BANYAK LAYANAN BERSAMAAN):
+   - Pelanggan kini dapat membuat pesanan baru kapan saja meskipun ada pesanan lain yang sedang berjalan (misal: memesan Mai-Food sambil naik Mai-Ride, memesan 2 resto berbeda, atau memesan Mai-Titip/Send sekaligus).
+   - Menghapus pembajakan navigasi paksa saat membuka menu pemesanan baru. State formulir dan titik koordinat otomatis di-reset bersih sehingga setiap pesanan baru terisolasi sempurna tanpa saling menimpa.
+   - Dilengkapi batas aman anti-spam cerdas dari backend server (maksimal 5 pesanan aktif bersamaan per akun).
+
+2. FLOATING BANNER MULTI-ORDER & LEMBAR DAFTAR PESANAN:
+   - Banner mengambang di beranda kini mendukung multi-order:
+     * Jika ada 1 pesanan aktif: Menampilkan kartu pelacakan tunggal yang elegan dan ringkas seperti biasa.
+     * Jika ada lebih dari 1 pesanan aktif: Menampilkan lencana interaktif "🔥 X Pesanan Berlangsung (Lihat Semua)" lengkap dengan tombol pintasan.
+   - Lembar Bawah (Bottom Sheet) "Pesanan Berlangsung":
+     * Menampilkan daftar seluruh pesanan aktif lengkap dengan jenis layanan (Ride, Car, Send, Titip, Food, Mart), nama resto/tujuan, status live (Memasak, Menuju Lokasi, Diantar), dan harga.
+     * Tombol "Lacak" langsung ke halaman pemantauan GPS masing-masing pesanan.
+     * Tombol "+ Pesan Layanan Lainnya" untuk langsung kembali ke beranda dan memilih layanan baru.
+
+3. KONTROL NAVIGASI PELACAKAN LEBIH FLEKSIBEL:
+   - Menambahkan tombol kembali ("Ke Beranda") di bilah atas layar pelacakan rute (Mai-Ride, Mai-Car, Mai-Send, Mai-Titip).
+   - Pelanggan dapat kembali ke beranda kapan saja dengan aman; pesanan dipastikan tetap berjalan normal di latar belakang.
+   - Setiap kali halaman pelacakan dibuka, sistem secara otomatis mengikat instance controller sesuai ID pesanan spesifik tanpa gangguan memori.
