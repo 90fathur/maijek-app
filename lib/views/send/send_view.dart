@@ -28,6 +28,7 @@ class _SendViewState extends State<SendView> {
   @override
   void initState() {
     super.initState();
+    orderController.reset(); // Pastikan state bersih untuk pesanan baru tanpa ganggu pesanan lain
     // Force picking state when opened
     orderController.currentState.value = OrderState.idle;
     authController.fetchProfile(); // Refresh saldo

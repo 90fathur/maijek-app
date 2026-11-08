@@ -32,6 +32,9 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
     
     // Get order ID from arguments
     String orderId = Get.arguments['order_id'].toString();
+    if (Get.isRegistered<OrderTrackingController>()) {
+      Get.delete<OrderTrackingController>(force: true);
+    }
     trackingController = Get.put(OrderTrackingController(orderId));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -45,6 +48,9 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
   @override
   void dispose() {
     _controller.dispose();
+    if (Get.isRegistered<OrderTrackingController>()) {
+      Get.delete<OrderTrackingController>(force: true);
+    }
     super.dispose();
   }
 
@@ -168,6 +174,14 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
                   ),
                   child: Row(
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.primaryNavy),
+                        tooltip: 'Ke Beranda (Pesanan tetap berjalan)',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () => Get.offAllNamed('/home'),
+                      ),
+                      const SizedBox(width: 8),
                       Image.asset(
                         'assets/images/logo.png',
                         height: 28,

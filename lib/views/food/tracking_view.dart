@@ -112,6 +112,9 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
   @override
   void initState() {
     super.initState();
+    if (Get.isRegistered<FoodTrackingController>()) {
+      Get.delete<FoodTrackingController>(force: true);
+    }
     trackingController = Get.put(FoodTrackingController());
     _radarController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -136,6 +139,9 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
   @override
   void dispose() {
     _radarController.dispose();
+    if (Get.isRegistered<FoodTrackingController>()) {
+      Get.delete<FoodTrackingController>(force: true);
+    }
     super.dispose();
   }
 

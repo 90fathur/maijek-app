@@ -29,6 +29,7 @@ class _RideViewState extends State<RideView> {
   @override
   void initState() {
     super.initState();
+    orderController.reset(); // Pastikan state bersih untuk pesanan baru tanpa ganggu pesanan lain
     if (widget.initialVehicle != null) {
       orderController.selectedVehicle.value = widget.initialVehicle!;
     }

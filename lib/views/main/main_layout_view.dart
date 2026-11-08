@@ -191,15 +191,96 @@ class _MainLayoutViewState extends State<MainLayoutView> {
   }
 
   Widget _buildGlobalActiveOrderBanner() {
-    final rideOrder = homeController.activeRideOrder.value;
-    final foodOrder = homeController.activeFoodOrder.value;
+    List<dynamic> allOrders = List<dynamic>.from(homeController.allActiveOrders);
 
-    if (rideOrder == null && foodOrder == null) {
+    // Fallback jika allActiveOrders belum terisi tapi activeRideOrder / activeFoodOrder ada
+    if (allOrders.isEmpty) {
+      if (homeController.activeFoodOrder.value != null) {
+        var fo = Map<String, dynamic>.from(homeController.activeFoodOrder.value);
+        fo['order_family'] = 'food';
+        allOrders.add(fo);
+      }
+      if (homeController.activeRideOrder.value != null) {
+        var ro = Map<String, dynamic>.from(homeController.activeRideOrder.value);
+        ro['order_family'] = 'ride';
+        allOrders.add(ro);
+      }
+    }
+
+    if (allOrders.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    bool isFood = foodOrder != null;
-    dynamic order = isFood ? foodOrder : rideOrder;
+    // Jika hanya ada 1 pesanan aktif: Tampilkan kartu tunggal
+    if (allOrders.length == 1) {
+      return _buildSingleOrderCard(allOrders.first);
+    }
+
+    // Jika ada lebih dari 1 pesanan aktif (Multi-Order concurrent):
+    // Tampilkan pill multi-order + kartu order teratas, dan ketukan membuka bottom sheet lengkap
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Pill Multi-Order Indicator
+        GestureDetector(
+          onTap: () => _showAllActiveOrdersSheet(context, allOrders),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+              border: Border.all(color: AppTheme.accentGold.withValues(alpha: 0.6), width: 1.2),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('🔥', style: TextStyle(fontSize: 12)),
+                const SizedBox(width: 6),
+                Text(
+                  '${allOrders.length} Pesanan Berlangsung',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+                const SizedBox(width: 8),
+                Container(width: 3.5, height: 3.5, decoration: const BoxDecoration(color: Colors.white60, shape: BoxShape.circle)),
+                const SizedBox(width: 8),
+                const Text(
+                  'Lihat Semua',
+                  style: TextStyle(color: AppTheme.accentGold, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+                const SizedBox(width: 2),
+                const Icon(Icons.keyboard_arrow_up_rounded, color: AppTheme.accentGold, size: 16),
+              ],
+            ),
+          ),
+        ),
+        _buildSingleOrderCard(
+          allOrders.first,
+          isMultiOrder: true,
+          totalCount: allOrders.length,
+          onOpenList: () => _showAllActiveOrdersSheet(context, allOrders),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSingleOrderCard(
+    dynamic order, {
+    bool isMultiOrder = false,
+    int totalCount = 1,
+    VoidCallback? onOpenList,
+  }) {
+    bool isFood = (order['order_family'] == 'food') || order.containsKey('merchant_name') || order.containsKey('food_total');
 
     final bool isUnpaidQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris' &&
         (order['payment_status'] ?? '').toString().toLowerCase() != 'paid';
@@ -415,6 +496,23 @@ class _MainLayoutViewState extends State<MainLayoutView> {
               ),
               const SizedBox(width: 8),
 
+              // Tombol Daftar (Jika Multi-Order)
+              if (isMultiOrder && onOpenList != null) ...[
+                InkWell(
+                  onTap: onOpenList,
+                  child: Container(
+                    padding: const EdgeInsets.all(7),
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: const Icon(Icons.format_list_bulleted_rounded, size: 16, color: AppTheme.primaryNavy),
+                  ),
+                ),
+              ],
+
               // Tombol Lacak Aksi
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -444,6 +542,332 @@ class _MainLayoutViewState extends State<MainLayoutView> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showAllActiveOrdersSheet(BuildContext context, List<dynamic> orders) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).padding.bottom + 16,
+            top: 12,
+            left: 18,
+            right: 18,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryNavy.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.layers_rounded, color: AppTheme.primaryNavy, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'Pesanan Berlangsung',
+                              style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.orange.shade200),
+                              ),
+                              child: Text(
+                                '${orders.length} Aktif',
+                                style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold, fontSize: 11),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Ketuk pesanan untuk membuka rute di peta',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // List of Orders
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.52,
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: orders.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (_, index) {
+                    final item = orders[index];
+                    return _buildOrderListItem(ctx, item, index + 1);
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Button "+ Pesan Layanan Lain"
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    controller.changePage(0);
+                    Get.snackbar(
+                      'Pesan Baru',
+                      'Silakan pilih layanan di beranda untuk memesan lagi tanpa mengganggu pesanan yang sedang berjalan.',
+                      backgroundColor: AppTheme.primaryNavy,
+                      colorText: Colors.white,
+                      duration: const Duration(seconds: 3),
+                    );
+                  },
+                  icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                  label: const Text('Pesan Layanan Lainnya', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryNavy,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOrderListItem(BuildContext ctx, dynamic order, int index) {
+    bool isFood = (order['order_family'] == 'food') || order.containsKey('merchant_name') || order.containsKey('food_total');
+    final bool isUnpaidQris = (order['payment_method'] ?? '').toString().toLowerCase() == 'qris' &&
+        (order['payment_status'] ?? '').toString().toLowerCase() != 'paid';
+
+    String serviceType = (order['service_type'] ?? (isFood ? 'food' : 'motor')).toString().toLowerCase();
+    String status = (order['status'] ?? 'pending').toString().toLowerCase();
+    String dVehicle = (order['driver_vehicle_type'] ?? order['vehicle_type'] ?? '').toString().toLowerCase();
+    bool isCarService = serviceType == 'mobil' || serviceType == 'car' || serviceType == 'car_premium' ||
+                        dVehicle.contains('mobil') || dVehicle.contains('car');
+
+    String serviceTitle = 'Mai-Ride';
+    IconData serviceIcon = Icons.two_wheeler;
+    Color serviceColor = AppTheme.primaryNavy;
+
+    bool isOrderMart = (order['order_type'] ?? '').toString().toLowerCase() == 'mart' || serviceType == 'mart';
+
+    if (isOrderMart) {
+      serviceTitle = 'Mai-Mart';
+      serviceIcon = Icons.storefront;
+      serviceColor = Colors.teal;
+    } else if (isFood || serviceType == 'food') {
+      serviceTitle = 'Mai-Food';
+      serviceIcon = Icons.lunch_dining;
+      serviceColor = Colors.deepOrange;
+    } else if (serviceType == 'mai_send_motor' || serviceType == 'send') {
+      serviceTitle = 'Mai-Send';
+      serviceIcon = Icons.local_shipping;
+      serviceColor = Colors.purple;
+    } else if (serviceType == 'mai_titip' || serviceType == 'titip') {
+      serviceTitle = 'Mai-Titip';
+      serviceIcon = Icons.shopping_basket;
+      serviceColor = Colors.green.shade700;
+    } else if (isCarService) {
+      serviceTitle = 'Mai-Car';
+      serviceIcon = Icons.directions_car;
+      serviceColor = const Color(0xFF0066CC);
+    }
+
+    String statusText = 'Sedang Berjalan';
+    String subInfo = '';
+    double priceVal = double.tryParse((order['total_price'] ?? order['price'] ?? 0).toString()) ?? 0;
+
+    if (isFood) {
+      String merchantName = order['merchant_name'] ?? (isOrderMart ? 'Toko' : 'Restoran');
+      subInfo = merchantName;
+      if (isUnpaidQris) {
+        statusText = 'Menunggu Pembayaran QRIS';
+      } else if (status == 'pending') {
+        statusText = 'Menunggu Konfirmasi Resto';
+      } else if (status == 'accepted_by_merchant' || status == 'processing') {
+        statusText = isOrderMart ? 'Sedang Dikemas' : 'Sedang Dimasak';
+      } else if (status == 'ready' || status == 'driver_assigned' || status == 'accepted') {
+        statusText = 'Driver Menuju Resto';
+      } else if (status == 'driver_at_merchant') {
+        statusText = 'Driver di Lokasi Resto';
+      } else if (status == 'delivering' || status == 'in_progress') {
+        statusText = 'Pesanan Sedang Diantar';
+      }
+    } else {
+      subInfo = order['dropoff_address'] ?? 'Menuju Lokasi Tujuan';
+      if (isUnpaidQris) {
+        statusText = 'Menunggu Pembayaran QRIS';
+      } else if (status == 'pending') {
+        statusText = 'Mencari Pengemudi';
+      } else if (status == 'accepted') {
+        statusText = 'Driver Menuju Penjemputan';
+      } else if (status == 'arrived') {
+        statusText = 'Driver Tiba di Titik Jemput';
+      } else if (status == 'in_progress') {
+        statusText = 'Dalam Perjalanan';
+      }
+    }
+
+    return InkWell(
+      onTap: () {
+        Navigator.pop(ctx);
+        if (isFood) {
+          Get.toNamed('/food/tracking', arguments: {'order_id': order['id']});
+        } else {
+          Get.toNamed('/order-tracking', arguments: {'order_id': order['id']});
+        }
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: serviceColor.withValues(alpha: 0.25), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: serviceColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(serviceIcon, color: serviceColor, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        margin: const EdgeInsets.only(right: 6),
+                        decoration: BoxDecoration(
+                          color: serviceColor,
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text(
+                          serviceTitle,
+                          style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          statusText,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: AppTheme.textMain),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subInfo,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (priceVal > 0) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      Formatter.currency(priceVal),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: serviceColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isUnpaidQris ? 'Bayar QR' : 'Lacak',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: isUnpaidQris ? const Color(0xFF92400E) : serviceColor,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    isUnpaidQris ? Icons.qr_code_rounded : Icons.arrow_forward_ios_rounded,
+                    size: 10,
+                    color: isUnpaidQris ? const Color(0xFF92400E) : serviceColor,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

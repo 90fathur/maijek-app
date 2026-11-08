@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:async';
 import '../core/api_client.dart';
 import 'auth_controller.dart';
+import 'home_controller.dart';
 import '../views/wallet/insufficient_balance_sheet.dart';
 import 'dart:math' show atan2, cos, sin, pi, sqrt, asin;
 import 'package:flutter/material.dart';
@@ -298,7 +299,6 @@ class OrderController extends GetxController {
     _loadCarIcon();
     fetchSettings();
     fetchDynamicPromo();
-    _checkActiveOrder();
   }
 
   Future<void> _loadMotorcycleIcon() async {
@@ -899,6 +899,10 @@ class OrderController extends GetxController {
       if (rawResponse.statusCode == 201 || response['status'] == 201 || response['status'] == 200) {
         var orderId = response['data']['order_id'];
         var qris = response['data']?['qris'];
+        // Sinkronkan daftar pesanan aktif di HomeController
+        if (Get.isRegistered<HomeController>()) {
+          Get.find<HomeController>().checkActiveOrder();
+        }
         Get.toNamed('/order-tracking', arguments: {
           'order_id': orderId,
           'qris': qris,
@@ -916,9 +920,8 @@ class OrderController extends GetxController {
           },
         );
       } else if (response['message']?.contains('aktif') == true) {
-        // Jika ada pesanan aktif, paksa ambil data pesanan aktif dan arahkan ke tracking
-        _checkActiveOrder();
-        Get.snackbar('Dialihkan', 'Mengembalikan Anda ke pesanan yang sedang berjalan', backgroundColor: Colors.orange, colorText: Colors.white);
+        // Tampilkan pesan batasan pesanan aktif dari server jika ada
+        Get.snackbar('Pesanan Aktif', response['message'] ?? 'Anda memiliki pesanan yang masih berjalan.', backgroundColor: Colors.orange.shade800, colorText: Colors.white);
       } else {
         Get.snackbar('Gagal', response['message'] ?? 'Gagal membuat pesanan', backgroundColor: Colors.red, colorText: Colors.white);
       }

@@ -25,6 +25,7 @@ class HomeController extends GetxController {
 
   var activeRideOrder = Rxn<dynamic>();
   var activeFoodOrder = Rxn<dynamic>();
+  var allActiveOrders = <dynamic>[].obs;
 
   @override
   void onInit() {
@@ -190,21 +191,37 @@ class HomeController extends GetxController {
     // Jangan lakukan pengecekan pesanan aktif jika user tidak dalam kondisi logged in
     if (Get.isRegistered<AuthController>() && !Get.find<AuthController>().isLogged.value) {
       _activeOrderTimer?.cancel();
+      allActiveOrders.clear();
+      activeRideOrder.value = null;
+      activeFoodOrder.value = null;
       return;
     }
     try {
       final results = await Future.wait([
-        ApiClient.get('/user/orders/active'),
-        ApiClient.get('/user/food/active'),
+        ApiClient.get('/user/orders/active?all=1'),
+        ApiClient.get('/user/food/active?all=1'),
       ]);
 
       final rideRes = results[0];
       final foodRes = results[1];
+      List<dynamic> combinedList = [];
 
       // 1. Cek Pesanan Ride / Mobil / Send / Titip
       if (rideRes.statusCode == 200) {
         var body = jsonDecode(rideRes.body);
-        activeRideOrder.value = body['data'];
+        if (body['data'] is List) {
+          for (var item in body['data']) {
+            item['order_family'] = 'ride';
+            combinedList.add(item);
+          }
+          activeRideOrder.value = (body['data'] as List).isNotEmpty ? body['data'][0] : null;
+        } else if (body['data'] != null) {
+          body['data']['order_family'] = 'ride';
+          combinedList.add(body['data']);
+          activeRideOrder.value = body['data'];
+        } else {
+          activeRideOrder.value = null;
+        }
       } else if (rideRes.statusCode == 404) {
         activeRideOrder.value = null;
       }
@@ -212,10 +229,24 @@ class HomeController extends GetxController {
       // 2. Cek Pesanan Food (Makanan)
       if (foodRes.statusCode == 200) {
         var body = jsonDecode(foodRes.body);
-        activeFoodOrder.value = body['data'];
+        if (body['data'] is List) {
+          for (var item in body['data']) {
+            item['order_family'] = 'food';
+            combinedList.add(item);
+          }
+          activeFoodOrder.value = (body['data'] as List).isNotEmpty ? body['data'][0] : null;
+        } else if (body['data'] != null) {
+          body['data']['order_family'] = 'food';
+          combinedList.add(body['data']);
+          activeFoodOrder.value = body['data'];
+        } else {
+          activeFoodOrder.value = null;
+        }
       } else if (foodRes.statusCode == 404) {
         activeFoodOrder.value = null;
       }
+
+      allActiveOrders.value = combinedList;
     } catch (e) {
       // Sinyal tersendat/timeout: Jangan reset state, pertahankan kartu agar tidak hilang tiba-tiba
       debugPrint('checkActiveOrder network glitch: $e');
