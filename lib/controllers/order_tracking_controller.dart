@@ -237,6 +237,11 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
             'driver_qris_image_url': order['driver_qris_image_url'],
             'driver_qris_merchant_name': order['driver_qris_merchant_name'],
             'driver_qris_is_active': order['driver_qris_is_active'],
+            'service_type': order['service_type'],
+            'price': orderPrice.value,
+            'titip_total_cost': titipTotalCost.value,
+            'titip_item_price': titipItemPrice.value,
+            'payment_method': paymentMethod.value,
           };
           
           if (order['driver_lat'] != null && order['driver_lng'] != null) {

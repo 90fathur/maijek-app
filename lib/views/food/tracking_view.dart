@@ -1182,6 +1182,8 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                         ),
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    _buildTitipConversionCard(context, order, isMart),
                   ],
                   // Smart ETA Card or Cancellation Card
                   if (isCancelled)
@@ -1475,6 +1477,31 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
                   // Hanya dapat dibatalkan jika resto/toko BELUM mengonfirmasi pesanan (masih 'pending')
                   if (order['status'] == 'pending') ...[
                     const SizedBox(height: 16),
+                    Obx(() {
+                      if (trackingController.canConvertToTitip.value) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.flash_on_rounded, color: Colors.white, size: 19),
+                              label: const Text(
+                                'Alihkan ke Mai-Titip (Driver Langsung Beli)',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                backgroundColor: const Color(0xFF0F766E),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                elevation: 1,
+                              ),
+                              onPressed: () => _showConvertToTitipModal(context, order, isMart),
+                            ),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
@@ -1936,6 +1963,440 @@ class _FoodTrackingViewState extends State<FoodTrackingView> with SingleTickerPr
       dropoffAddress: order['delivery_address'],
       statusText: statusText,
       etaText: eta,
+    );
+  }
+
+  /// Banner Waktu Tunggu & Penawaran Konversi Cerdas ke Mai-Titip (Jastip Kurir)
+  Widget _buildTitipConversionCard(BuildContext context, dynamic order, bool isMart) {
+    return Obx(() {
+      final bool canConvert = trackingController.canConvertToTitip.value;
+      final int elapsed = trackingController.elapsedSeconds.value;
+      final int remainingSeconds = (180 - elapsed).clamp(0, 180);
+      final int mins = remainingSeconds ~/ 60;
+      final int secs = remainingSeconds % 60;
+      final String countdownStr = '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+      final double progress = (elapsed / 180.0).clamp(0.0, 1.0);
+
+      if (canConvert) {
+        return Container(
+          margin: const EdgeInsets.only(top: 4),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFF0FDFA), Color(0xFFCCFBF1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF14B8A6), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF14B8A6).withValues(alpha: 0.12),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F766E),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.flash_on_rounded, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isMart ? 'Toko Belum Merespons (> 3 Menit)' : 'Resto Belum Merespons (> 3 Menit)',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF115E59),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Tersedia opsi cerdas alihkan ke kurir titip',
+                          style: TextStyle(fontSize: 11, color: Color(0xFF0F766E)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F766E),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Solusi Cepat',
+                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                isMart
+                    ? 'Pihak toko belum mengonfirmasi pesanan. Agar tidak menunggu lama, alihkan ke Mai-Titip agar Kurir Maijek langsung datang ke toko & membelikannya untuk Anda!'
+                    : 'Resto belum mengonfirmasi pesanan. Agar tidak menunggu lama, alihkan ke Mai-Titip agar Driver Maijek langsung meluncur ke resto & memesankan menu Anda secara langsung!',
+                style: const TextStyle(fontSize: 11.5, color: Color(0xFF134E4A), height: 1.35),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 17),
+                  label: const Text(
+                    'Alihkan ke Mai-Titip (Driver Langsung Beli)',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.5),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F766E),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 1,
+                  ),
+                  onPressed: () => _showConvertToTitipModal(context, order, isMart),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // Jika masih dalam 3 menit pertama, tampilkan progress waktu tunggu ramah
+      return Container(
+        margin: const EdgeInsets.only(top: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.timer_outlined, size: 14, color: Colors.grey.shade700),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Menunggu konfirmasi resto',
+                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
+                    ),
+                  ],
+                ),
+                Text(
+                  countdownStr,
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade800),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 4,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0F766E)),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Jika resto belum merespons dalam 3 menit, Anda dapat mengalihkan pesanan ke Driver Mai-Titip.',
+              style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  /// Lembar Konfirmasi Alihkan ke Mai-Titip
+  void _showConvertToTitipModal(BuildContext context, dynamic order, bool isMart) {
+    final String merchantName = order['merchant_name'] ?? (isMart ? 'Toko' : 'Restoran');
+    final String merchantAddress = order['merchant_address'] ?? 'Lokasi Restoran';
+    final String deliveryAddress = order['delivery_address'] ?? 'Alamat Tujuan';
+    final double foodTotal = double.tryParse(order['food_total']?.toString() ?? '0') ?? 0;
+    final double deliveryFee = double.tryParse(order['delivery_fee']?.toString() ?? '0') ?? 0;
+    final List items = (order['items'] is List) ? (order['items'] as List) : [];
+
+    Get.bottomSheet(
+      Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+        padding: const EdgeInsets.all(22),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFCCFBF1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.swap_calls_rounded, color: Color(0xFF0F766E), size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Alihkan ke Mai-Titip?',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
+                        ),
+                        Text(
+                          'Kurir Maijek langsung belanja ke resto',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.storefront, color: Color(0xFF0F766E), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                merchantName,
+                                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                merchantAddress,
+                                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Divider(height: 1),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.location_on, color: Colors.red, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Lokasi Pengantaran:', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                              Text(
+                                deliveryAddress,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Rincian Menu Pesanan
+              if (items.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.blueGrey.shade100),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.restaurant_menu, size: 16, color: Color(0xFF0F766E)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Menu yang Dipesan (${items.length} item):',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      for (var it in items.take(4))
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            children: [
+                              Text(
+                                '${it['quantity'] ?? 1}x',
+                                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F766E)),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  (it['name'] ?? it['menu_name'] ?? 'Menu').toString(),
+                                  style: const TextStyle(fontSize: 11.5, color: Colors.black87),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (items.length > 4)
+                        Text(
+                          '+ ${items.length - 4} item lainnya',
+                          style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.grey.shade600),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Card Informasi Biaya & Cara Kerja
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Estimasi Modal Belanja:', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                        Text(Formatter.currency(foodTotal), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Ongkir Kurir Titip:', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                        Text(Formatter.currency(deliveryFee), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const Divider(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, size: 16, color: Colors.green.shade800),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Kurir akan membelikan pesanan langsung di kasir restoran. Total akhir belanja akan disesuaikan dengan struk riil toko yang diinput kurir.',
+                            style: TextStyle(fontSize: 11, color: Colors.green.shade900, height: 1.3),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Tombol Konfirmasi
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Tunggu Resto', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.flash_on_rounded, color: Colors.white, size: 18),
+                      label: const Text(
+                        'Ya, Alihkan ke Titip',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0F766E),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 1,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        trackingController.convertToTitip();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
     );
   }
 }

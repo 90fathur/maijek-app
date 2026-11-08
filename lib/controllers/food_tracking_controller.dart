@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../core/api_client.dart';
+import '../core/theme.dart';
+import '../views/orders/order_tracking_view.dart';
 import 'auth_controller.dart';
 import 'home_controller.dart';
 
@@ -14,7 +16,13 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
   var isLoading = false.obs;
   var orderData = {}.obs;
   Timer? _timer;
+  Timer? _secondTimer;
   int? orderId;
+
+  // Pelacakan Waktu Tunggu & Konversi ke Mai-Titip
+  var elapsedSeconds = 0.obs;
+  var canConvertToTitip = false.obs;
+  var isConvertingToTitip = false.obs;
 
   var driverLocation = Rxn<LatLng>();
   var pickupLocation = Rxn<LatLng>();
@@ -74,6 +82,41 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       fetchOrderStatus();
     });
+    // Ticker 1 detik untuk menghitung waktu tunggu dan opsi alih ke Mai-Titip
+    _secondTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _tickTimer();
+    });
+  }
+
+  void _tickTimer() {
+    if (orderData.isEmpty) return;
+    String st = (orderData['status'] ?? '').toString().toLowerCase();
+    if (st != 'pending') {
+      canConvertToTitip.value = false;
+      return;
+    }
+
+    if (orderData['created_at'] != null) {
+      try {
+        DateTime created = DateTime.parse(orderData['created_at'].toString().replaceAll(' ', 'T'));
+        int diff = DateTime.now().difference(created).inSeconds;
+        if (diff < 0) diff = 0;
+        elapsedSeconds.value = diff;
+      } catch (_) {}
+    }
+
+    if (orderData['elapsed_seconds'] != null) {
+      int serverSec = int.tryParse(orderData['elapsed_seconds'].toString()) ?? 0;
+      if (serverSec > elapsedSeconds.value) {
+        elapsedSeconds.value = serverSec;
+      }
+    }
+
+    if (elapsedSeconds.value >= 180 || orderData['can_convert_to_titip'] == true) {
+      canConvertToTitip.value = true;
+    } else {
+      canConvertToTitip.value = false;
+    }
   }
 
   Future<void> _loadMarkerIcons() async {
@@ -709,9 +752,117 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
     }
   }
 
+  /// Mengalihkan pesanan MaiFood yang belum direspons resto (> 3 menit) langsung ke Mai-Titip (Jastip Kurir)
+  Future<void> convertToTitip() async {
+    if (isConvertingToTitip.value) return;
+    final targetId = orderId ?? orderData['id'];
+    if (targetId == null) {
+      Get.snackbar('Error', 'ID pesanan tidak valid', backgroundColor: Colors.red, colorText: Colors.white);
+      return;
+    }
+
+    try {
+      isConvertingToTitip.value = true;
+      Get.dialog(
+        PopScope(
+          canPop: false,
+          child: Center(
+            child: Container(
+              margin: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: AppTheme.primaryNavy),
+                  SizedBox(height: 16),
+                  Text(
+                    'Mengalihkan ke Mai-Titip...',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.primaryNavy),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Menghubungkan ke kurir terdekat',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      final response = await ApiClient.post('/user/food/convert-to-titip', {
+        'food_order_id': targetId,
+      });
+
+      if (Get.isDialogOpen ?? false) {
+        Get.back(); // Tutup loading dialog
+      }
+
+      if (response.statusCode == 200) {
+        final res = jsonDecode(response.body);
+        final newOrderId = res['data']?['new_order_id'] ?? res['new_order_id'];
+
+        _timer?.cancel();
+        _secondTimer?.cancel();
+
+        if (Get.isRegistered<HomeController>()) {
+          Get.find<HomeController>().activeFoodOrder.value = null;
+          Get.find<HomeController>().checkActiveOrder();
+        }
+
+        Get.snackbar(
+          'Dialihkan ke Mai-Titip! 🛍️',
+          'Pesanan kini dipegang kurir Mai-Titip. Kurir langsung membelikan ke resto.',
+          backgroundColor: const Color(0xFF0F766E),
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+
+        Get.off(
+          () => const OrderTrackingView(),
+          arguments: {
+            'order_id': newOrderId.toString(),
+            'orderId': newOrderId.toString(),
+          },
+        );
+      } else {
+        String errorMsg = 'Gagal mengalihkan pesanan';
+        try {
+          final body = jsonDecode(response.body);
+          errorMsg = body['message'] ?? errorMsg;
+        } catch (_) {}
+        Get.snackbar(
+          'Gagal Dialihkan',
+          errorMsg,
+          backgroundColor: Colors.red.shade700,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+      Get.snackbar(
+        'Kesalahan Jaringan',
+        'Gagal menghubungi server: $e',
+        backgroundColor: Colors.red.shade700,
+        colorText: Colors.white,
+      );
+    } finally {
+      isConvertingToTitip.value = false;
+    }
+  }
+
   @override
   void onClose() {
     _timer?.cancel();
+    _secondTimer?.cancel();
     _animController?.dispose();
     super.onClose();
   }

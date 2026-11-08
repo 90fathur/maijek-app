@@ -31,7 +31,9 @@ class _OrderTrackingViewState extends State<OrderTrackingView> with SingleTicker
     )..repeat();
     
     // Get order ID from arguments
-    String orderId = Get.arguments['order_id'].toString();
+    String orderId = (Get.arguments is Map
+        ? (Get.arguments['order_id'] ?? Get.arguments['orderId'])
+        : Get.arguments).toString();
     if (Get.isRegistered<OrderTrackingController>()) {
       Get.delete<OrderTrackingController>(force: true);
     }

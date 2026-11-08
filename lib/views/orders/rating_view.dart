@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/theme.dart';
 import '../../core/api_client.dart';
+import '../../core/utils.dart';
 import '../../controllers/auth_controller.dart';
 
 class RatingView extends StatefulWidget {
@@ -64,6 +65,75 @@ class _RatingViewState extends State<RatingView> {
               driverData?['vehicle_plate'] ?? '-',
               style: const TextStyle(color: AppTheme.textMuted),
             ),
+            if (driverData != null &&
+                ((driverData['service_type']?.toString().contains('titip') ?? false) ||
+                 (driverData['titip_total_cost'] != null && (double.tryParse(driverData['titip_total_cost'].toString()) ?? 0) > 0))) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.green.shade300, width: 1.2),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.receipt_long_rounded, color: Colors.green.shade800, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Rincian Biaya Final Mai-Titip',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.green.shade900),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Ongkir Kurir:', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                        Text(
+                          Formatter.currency(double.tryParse(driverData['price']?.toString() ?? '0') ?? 0),
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Belanja Toko (Struk Final):', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                        Text(
+                          Formatter.currency(
+                            (double.tryParse(driverData['titip_total_cost']?.toString() ?? '0') ?? 0) > 0
+                                ? (double.tryParse(driverData['titip_total_cost']?.toString() ?? '0') ?? 0)
+                                : (double.tryParse(driverData['titip_item_price']?.toString() ?? '0') ?? 0),
+                          ),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal.shade800),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total Akhir:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black)),
+                        Text(
+                          Formatter.currency(
+                            (double.tryParse(driverData['price']?.toString() ?? '0') ?? 0) +
+                            ((double.tryParse(driverData['titip_total_cost']?.toString() ?? '0') ?? 0) > 0
+                                ? (double.tryParse(driverData['titip_total_cost']?.toString() ?? '0') ?? 0)
+                                : (double.tryParse(driverData['titip_item_price']?.toString() ?? '0') ?? 0)),
+                          ),
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.green.shade900),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
             
             // Star Rating (Interactive)
