@@ -178,7 +178,11 @@ class FoodController extends GetxController {
       
       String query = '';
       try {
-        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        Position? position = await Geolocator.getLastKnownPosition();
+        position ??= await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 4),
+        );
         query = '?lat=${position.latitude}&lng=${position.longitude}';
       } catch (e) {
         print('Location not available for sorting: $e');
@@ -215,16 +219,23 @@ class FoodController extends GetxController {
   }
 
   Future<void> fetchMerchantDetail(int merchantId) async {
+    currentMerchantId.value = merchantId.toString();
     isLoading.value = true;
     try {
       final response = await ApiClient.get('/user/food/merchant/$merchantId');
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
-        merchantDetail.value = data['data'];
-        merchantMenus.value = data['data']['menus'] ?? [];
+        if (data['data'] != null) {
+          merchantDetail.value = Map<String, dynamic>.from(data['data']);
+          merchantMenus.value = data['data']['menus'] ?? [];
+        }
+      } else {
+        Get.snackbar('Perhatian', 'Restoran tidak ditemukan atau sedang offline',
+            snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 3));
       }
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat detail restoran');
+      Get.snackbar('Koneksi Gagal', 'Gagal memuat detail restoran. Silakan coba lagi.',
+          snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 3));
     } finally {
       isLoading.value = false;
     }

@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
 import '../core/api_client.dart';
 import '../core/theme.dart';
+import '../core/proximity_alert_service.dart';
 import 'auth_controller.dart';
 
 class HomeController extends GetxController {
@@ -16,6 +18,7 @@ class HomeController extends GetxController {
   var bestSellerMartMenus = [].obs;
   var newMerchants = [].obs;
   var latestMenus = [].obs;
+  var recommendedNearbyMenus = [].obs;
   var isLoading = false.obs;
 
   var currentBannerPage = 0.obs;
@@ -169,6 +172,28 @@ class HomeController extends GetxController {
       } catch (e) {
         newMerchants.clear();
       }
+
+      // 7. Ambil Menu Rekomendasi Terdekat dari GPS Pelanggan
+      try {
+        String query = '';
+        try {
+          Position? position = await Geolocator.getLastKnownPosition();
+          position ??= await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 4),
+          );
+          query = '?lat=${position.latitude}&lng=${position.longitude}&limit=12';
+        } catch (_) {}
+
+        final recRes = await ApiClient.get('/user/home/recommended-nearby$query');
+        if (recRes.statusCode == 200) {
+          recommendedNearbyMenus.value = json.decode(recRes.body)['data'] ?? [];
+        } else {
+          recommendedNearbyMenus.clear();
+        }
+      } catch (e) {
+        recommendedNearbyMenus.clear();
+      }
     } catch (e) {
       // Handle error
     } finally {
@@ -247,9 +272,68 @@ class HomeController extends GetxController {
       }
 
       allActiveOrders.value = combinedList;
+      _checkProximityAlertsForActiveOrders();
     } catch (e) {
       // Sinyal tersendat/timeout: Jangan reset state, pertahankan kartu agar tidak hilang tiba-tiba
       debugPrint('checkActiveOrder network glitch: $e');
+    }
+  }
+
+  /// Pengecekan Peringatan Suara Jarak Dekat Kurir (<= 100 Meter)
+  void _checkProximityAlertsForActiveOrders() {
+    // 1. Cek Pesanan Food / Mart
+    final fo = activeFoodOrder.value;
+    if (fo != null) {
+      final String st = (fo['status'] ?? '').toString().toLowerCase();
+      if (['delivering', 'in_progress', 'driver_at_merchant'].contains(st)) {
+        final dLat = double.tryParse(fo['driver_lat']?.toString() ?? '');
+        final dLng = double.tryParse(fo['driver_lng']?.toString() ?? '');
+        final tLat = double.tryParse(fo['delivery_lat']?.toString() ?? '');
+        final tLng = double.tryParse(fo['delivery_lng']?.toString() ?? '');
+        if (dLat != null && dLng != null && tLat != null && tLng != null) {
+          ProximityAlertService.checkAndTriggerProximityAlert(
+            orderId: fo['id'].toString(),
+            orderType: (fo['order_type'] ?? 'food').toString(),
+            driverLat: dLat,
+            driverLng: dLng,
+            targetLat: tLat,
+            targetLng: tLng,
+            driverName: fo['driver_name'],
+            driverPlate: fo['driver_vehicle_plate'] ?? fo['vehicle_plate'],
+          );
+        }
+      }
+    }
+
+    // 2. Cek Pesanan Ride / Delivery / Titip
+    final ro = activeRideOrder.value;
+    if (ro != null) {
+      final String st = (ro['status'] ?? '').toString().toLowerCase();
+      double? targetLat;
+      double? targetLng;
+      if (st == 'accepted') {
+        targetLat = double.tryParse(ro['pickup_lat']?.toString() ?? '');
+        targetLng = double.tryParse(ro['pickup_lng']?.toString() ?? '');
+      } else if (['in_progress', 'on_trip'].contains(st)) {
+        targetLat = double.tryParse(ro['dropoff_lat']?.toString() ?? '');
+        targetLng = double.tryParse(ro['dropoff_lng']?.toString() ?? '');
+      }
+
+      final dLat = double.tryParse(ro['driver_lat']?.toString() ?? '');
+      final dLng = double.tryParse(ro['driver_lng']?.toString() ?? '');
+
+      if (targetLat != null && targetLng != null && dLat != null && dLng != null) {
+        ProximityAlertService.checkAndTriggerProximityAlert(
+          orderId: ro['id'].toString(),
+          orderType: (ro['service_type'] ?? 'ride').toString(),
+          driverLat: dLat,
+          driverLng: dLng,
+          targetLat: targetLat,
+          targetLng: targetLng,
+          driverName: ro['driver_name'],
+          driverPlate: ro['vehicle_plate'],
+        );
+      }
     }
   }
 

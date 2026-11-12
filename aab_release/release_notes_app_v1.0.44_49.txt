@@ -1,0 +1,36 @@
+============================================================
+CATATAN RILIS APLIKASI PELANGGAN MAIJEK (v1.0.44+49)
+============================================================
+
+Tanggal Rilis : 01 November 2026
+Versi Aplikasi: 1.0.44
+Version Code  : 49
+File AAB      : aab_release/maijek_app_v1.0.44_49.aab
+
+FITUR & PEMBARUAN UTAMA:
+1. 📲 Perbaikan Status & Proteksi Pembayaran QRIS (MaiFood & Seluruh Layanan):
+   - Memperbaiki bug status pembayaran QRIS MaiFood yang sebelumnya langsung menampilkan "Lunas" padahal pesanan belum dibayar.
+   - Status sebelum pembayaran kini dengan tegas dan akurat menampilkan "Menunggu Pembayaran QRIS (Rp XX.XXX)" lengkap dengan kartu instruksi oranye.
+   - Tombol "Bayar QRIS Sekarang" selalu tersedia di layar pelacakan untuk memunculkan kembali kode QR, countdown timer, dan tombol Download QR.
+   - Proteksi ketat: Restoran dan kurir tidak akan memproses pesanan sampai pembayaran QRIS 100% terkonfirmasi lunas.
+
+2. 🏍️ Ikon Kurir / Driver Berubah Menjadi Biru Khas Maijek:
+   - Mengubah seluruh tampilan ikon kurir motor pada peta pelacakan dari warna hijau menjadi Biru Khas Maijek (Maijek Royal Blue) yang modern dan elegan.
+
+3. 🎛️ Integrasi Saklar Kontrol Gateway QRIS Dinamis dari Admin Panel:
+   - Aplikasi kini secara dinamis membaca status ketersediaan gateway QRIS dari server Admin Panel.
+   - Jika QRIS sedang mengalami gangguan / pemeliharaan, opsi pembayaran QRIS di halaman checkout (Ride, Send, Titip, Food, Mart) otomatis dinonaktifkan/ditandai pemeliharaan dan mengalihkan metode ke Tunai secara aman.
+   - Menampilkan pesan notifikasi pemeliharaan kustom dari Admin jika pengguna mencoba memilih QRIS saat dinonaktifkan.
+
+4. 📍 Mai-Titip (Jastip Belanja) Koordinat Presisi:
+   - Lokasi pengantaran (Dropoff) belanja otomatis terkunci ke titik GPS pelanggan pemesan saat membuka menu Mai-Titip, mencegah kekeliruan titik pengantaran ke toko.
+
+============================================================
+--- TEKS SINGKAT UNTUK GOOGLE PLAY CONSOLE (What's New / Ada yang baru) ---
+Pembaruan v1.0.44:
+• Perbaikan akurasi status pembayaran QRIS instan pada pelacakan pesanan MaiFood & seluruh layanan.
+• Pembaruan visual ikon kurir pada peta pelacakan menjadi warna biru khas Maijek.
+• Integrasi saklar dinamis ketersediaan gateway QRIS & proteksi otomatis saat pemeliharaan sistem.
+• Peningkatan presisi titik koordinat pengantaran pada layanan Mai-Titip (Jastip Belanja).
+• Peningkatan stabilitas dan performa aplikasi.
+============================================================

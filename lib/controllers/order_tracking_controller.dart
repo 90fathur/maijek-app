@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../core/api_client.dart';
+import '../core/proximity_alert_service.dart';
 import '../views/wallet/qris_payment_sheet.dart';
 
 class OrderTrackingController extends GetxController with GetSingleTickerProviderStateMixin {
@@ -250,6 +251,27 @@ class OrderTrackingController extends GetxController with GetSingleTickerProvide
               double.parse(order['driver_lng'].toString())
             );
             _updateDriverMarker();
+
+            // Pengecekan Peringatan Suara Jarak Dekat Kurir (<= 100 Meter)
+            LatLng? targetPoint;
+            if (status.value == 'accepted' && pickupLocation != null) {
+              targetPoint = pickupLocation;
+            } else if (['in_progress', 'on_trip'].contains(status.value) && dropoffLocation != null) {
+              targetPoint = dropoffLocation;
+            }
+
+            if (targetPoint != null) {
+              ProximityAlertService.checkAndTriggerProximityAlert(
+                orderId: orderId,
+                orderType: (order['service_type'] ?? 'ride').toString(),
+                driverLat: driverLocation.value!.latitude,
+                driverLng: driverLocation.value!.longitude,
+                targetLat: targetPoint.latitude,
+                targetLng: targetPoint.longitude,
+                driverName: driverData.value?['name'],
+                driverPlate: driverData.value?['vehicle_plate'],
+              );
+            }
           }
         }
         

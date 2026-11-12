@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../core/api_client.dart';
 import '../core/theme.dart';
+import '../core/proximity_alert_service.dart';
 import '../views/orders/order_tracking_view.dart';
 import 'auth_controller.dart';
 import 'home_controller.dart';
@@ -307,6 +308,23 @@ class FoodTrackingController extends GetxController with GetSingleTickerProvider
     if (order['driver_lat'] != null && order['driver_lng'] != null) {
       driverLocation.value = LatLng(double.parse(order['driver_lat'].toString()), double.parse(order['driver_lng'].toString()));
       _updateDriverMarker();
+    }
+
+    // Pengecekan Peringatan Suara Jarak Dekat Kurir (<= 100 Meter)
+    if (driverLocation.value != null && dropoffLocation.value != null) {
+      final String st = (order['status'] ?? '').toString().toLowerCase();
+      if (['delivering', 'in_progress', 'driver_at_merchant'].contains(st)) {
+        ProximityAlertService.checkAndTriggerProximityAlert(
+          orderId: (order['id'] ?? orderId).toString(),
+          orderType: (order['order_type'] ?? 'food').toString(),
+          driverLat: driverLocation.value!.latitude,
+          driverLng: driverLocation.value!.longitude,
+          targetLat: dropoffLocation.value!.latitude,
+          targetLng: dropoffLocation.value!.longitude,
+          driverName: order['driver_name'],
+          driverPlate: order['driver_vehicle_plate'] ?? order['vehicle_plate'],
+        );
+      }
     }
   }
 

@@ -1,0 +1,42 @@
+============================================================
+CATATAN RILIS GOOGLE PLAY CONSOLE - MAIJEK APP (PELANGGAN)
+============================================================
+Versi Aplikasi : v1.0.48
+Kode Rilis     : 53 (Versi Terbaru)
+File Bundle    : maijek_app_v1.0.48_53.aab
+Tanggal Rilis  : 08 November 2026
+
+------------------------------------------------------------
+DESKRIPSI SINGKAT / PROMOTIONAL TEXT (Maks. 80 Karakter)
+------------------------------------------------------------
+Alihkan MaiFood ke Mai-Titip saat resto lama respons & rincian struk transparan!
+
+------------------------------------------------------------
+CATATAN RILIS LENGKAP (BAHASA INDONESIA)
+------------------------------------------------------------
+Yang Baru di Versi 1.0.48:
+1. FITUR CERDAS ALIH MAIFOOD KE MAI-TITIP (JASTIP KURIR):
+   - Jika restoran belum mengonfirmasi pesanan makanan lebih dari 3 menit, pelanggan kini dapat mengalihkan pesanan ke layanan Mai-Titip dengan sekali klik.
+   - Tanpa perlu memesan ulang: Koordinat resto dan alamat antar pelanggan otomatis digunakan, dan rincian menu pesanan diteruskan ke kurir motor terdekat.
+   - Kurir langsung meluncur ke lokasi resto dan memesankan menu Anda secara fisik di kasir.
+   - Saldo Mai-Pay / QRIS otomatis dikembalikan 100% seketika jika pesanan makanan awal telah terbayar digital.
+
+2. PELACAKAN JASTIP & STRUK KASIR TRANSPARAN:
+   - Layar pelacakan interaktif dengan stepper 4 tahapan belanja kurir.
+   - Menampilkan foto bukti struk kasir asli toko yang diunggah kurir.
+   - Tagihan final dihitung secara cerdas: Ongkir kurir + nominal belanja riil sesuai struk toko.
+   - Rincian biaya final langsung dirangkum rapi pada lembar penilaian (Rating) setelah pesanan selesai.
+
+3. OPTIMALISASI MULTI-ORDER & KEAMANAN SISTEM:
+   - Peningkatan performa floating banner multi-order saat menjalankan beberapa pesanan bersamaan.
+   - Penguatan keamanan koneksi API server dengan enkripsi HSTS tingkat lanjut untuk kenyamanan dan privasi transaksi pelanggan.
+
+------------------------------------------------------------
+--- TEKS SINGKAT UNTUK GOOGLE PLAY CONSOLE (What's New / Ada yang baru) ---
+Pembaruan v1.0.48:
+• Fitur baru: Alihkan pesanan MaiFood ke kurir Mai-Titip jika resto belum merespons dalam 3 menit.
+• Tampilan pelacakan belanja kurir, foto bukti struk kasir resmi, dan rincian total belanja riil.
+• Rincian tagihan final transparan pada layar selesai & penilaian.
+• Peningkatan stabilitas multi-order dan keamanan transaksi.
+============================================================
+

@@ -14,13 +14,45 @@ class MerchantDetailView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Obx(() => Text(controller.merchantDetail['name'] ?? 'Loading...', style: TextStyle(color: Colors.white))),
+        title: Obx(() => Text(controller.merchantDetail['name'] ?? (controller.isLoading.value ? 'Memuat Restoran...' : 'Detail Restoran'), style: const TextStyle(color: Colors.white))),
         backgroundColor: AppTheme.primaryBlue,
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.merchantDetail.isEmpty) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.merchantDetail.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.storefront_outlined, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text('Gagal Memuat Restoran', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text('Koneksi terputus atau restoran tidak ditemukan.', style: TextStyle(color: Colors.grey[600]), textAlign: TextAlign.center),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      final mId = int.tryParse(controller.currentMerchantId.value);
+                      if (mId != null && mId > 0) {
+                        controller.fetchMerchantDetail(mId);
+                      } else {
+                        Get.back();
+                      }
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Coba Lagi'),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue, foregroundColor: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         var merchant = controller.merchantDetail;

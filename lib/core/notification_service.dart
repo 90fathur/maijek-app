@@ -283,4 +283,39 @@ class NotificationService {
       );
     }
   }
+
+  /// Tampilkan notifikasi lokal untuk status penting (seperti kurir dekat)
+  static Future<void> showLocalAlert({
+    required String title,
+    required String body,
+    String? sound,
+    String? payload,
+  }) async {
+    try {
+      int notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
+      await _localNotificationsPlugin.show(
+        id: notificationId,
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+            orderChannel.id,
+            orderChannel.name,
+            channelDescription: orderChannel.description,
+            icon: '@mipmap/ic_launcher',
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            sound: sound != null ? RawResourceAndroidNotificationSound(sound) : null,
+            enableVibration: true,
+            visibility: NotificationVisibility.public,
+            ticker: title,
+          ),
+        ),
+        payload: payload ?? '',
+      );
+    } catch (e) {
+      debugPrint('showLocalAlert error: $e');
+    }
+  }
 }

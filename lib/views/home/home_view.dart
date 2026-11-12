@@ -65,6 +65,8 @@ class HomeView extends StatelessWidget {
                         const SizedBox(height: 24),
                         _buildBestSellerFoodSection(),
                         _buildBestSellerMartSection(),
+                        _buildNearbyFoodMenuSection(),
+                        const SizedBox(height: 24),
                         _buildNearbyFood(),
                         const SizedBox(height: 24),
                         _buildPromoFeed(),
@@ -2082,14 +2084,32 @@ class HomeView extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('🍽️', style: TextStyle(fontSize: 18)),
-              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryNavy.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.storefront_rounded, color: AppTheme.primaryNavy, size: 18),
+              ),
+              const SizedBox(width: 8),
               const Expanded(
-                child: Text(
-                  'Restoran Pilihan',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.textMain),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Restoran Terdekat',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'Resto pilihan terdekat dari posisimu',
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -2162,6 +2182,263 @@ class HomeView extends StatelessWidget {
                             ],
                           ),
                         )
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  // Widget Makanan Terdekat (Menu Acak Paling Dekat dari GPS Pelanggan)
+  Widget _buildNearbyFoodMenuSection() {
+    return Obx(() {
+      final items = homeController.recommendedNearbyMenus;
+      if (items.isEmpty) return const SizedBox.shrink();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6D00), Color(0xFFFF9100)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF6D00).withValues(alpha: 0.30),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.fastfood_rounded, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Makanan Terdekat',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'Pilihan lezat paling dekat denganmu 🍽️',
+                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => Get.to(() => MerchantsView()),
+                child: const Text(
+                  'Lihat Semua',
+                  style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 236,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: items.length > 12 ? 12 : items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+                final String name = item['name'] ?? 'Menu Lezat';
+                final String merchantName = item['merchant_name'] ?? 'Restoran';
+                final String photo = item['photo'] ?? '';
+                final double origPrice = double.tryParse((item['price'] ?? 0).toString()) ?? 0;
+                final double discPrice = double.tryParse((item['discount_price'] ?? 0).toString()) ?? 0;
+                final int discPercent = int.tryParse((item['discount_percent'] ?? 0).toString()) ?? 0;
+                final String distStr = item['distance_formatted'] ?? (item['distance'] != null ? '${item['distance']} km' : 'Dekat');
+                final String estTime = item['estimated_time'] ?? '15-20 mnt';
+                final dynamic mId = item['merchant_id'];
+
+                return GestureDetector(
+                  onTap: () {
+                    if (mId != null && int.tryParse(mId.toString()) != null) {
+                      foodController.fetchMerchantDetail(int.parse(mId.toString()));
+                      Get.to(() => MerchantDetailView());
+                    } else {
+                      Get.to(() => MerchantsView());
+                    }
+                  },
+                  child: Container(
+                    width: 155,
+                    margin: const EdgeInsets.only(right: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                      border: Border.all(color: Colors.grey.shade100),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                              child: photo.isNotEmpty
+                                  ? Image.network(
+                                      photo,
+                                      height: 110,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                                    )
+                                  : _buildPlaceholder(),
+                            ),
+                            // Badge Jarak Terdekat (Pill Kiri Atas)
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.70),
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.location_on, color: Color(0xFF00E676), size: 11),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      distStr,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Badge Diskon jika ada
+                            if (discPercent > 0)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade600,
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                                  ),
+                                  child: Text(
+                                    '$discPercent%',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Icon(Icons.restaurant_rounded, size: 12, color: Colors.grey.shade600),
+                                  const SizedBox(width: 3),
+                                  Expanded(
+                                    child: Text(
+                                      merchantName,
+                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              if (discPrice > 0 && discPrice < origPrice) ...[
+                                Text(
+                                  Formatter.currency(origPrice),
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    color: Colors.grey,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                                Text(
+                                  Formatter.currency(discPrice),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ] else ...[
+                                Text(
+                                  Formatter.currency(origPrice),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryNavy,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  const Icon(Icons.star, color: Colors.amber, size: 12),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    item['rating'] != null ? item['rating'].toString() : '4.8',
+                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    '• $estTime',
+                                    style: TextStyle(fontSize: 9.5, color: Colors.grey.shade600),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
