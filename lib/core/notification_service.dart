@@ -57,7 +57,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     String? title = message.data['title'];
     String? body = message.data['message'] ?? message.data['body'];
     if (title != null && title.isNotEmpty) {
-      int notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
+      int notificationId = NotificationService.resolveNotificationId(message.data);
       localNotificationsPlugin.show(
         id: notificationId,
         title: title,
@@ -180,7 +180,7 @@ class NotificationService {
       if (message.notification != null) {
         _showNotification(message.notification, message.data);
       } else if (message.data.isNotEmpty && message.data['title'] != null) {
-        int notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
+        int notificationId = resolveNotificationId(message.data);
         _localNotificationsPlugin.show(
           id: notificationId,
           title: message.data['title'],
@@ -254,12 +254,32 @@ class NotificationService {
     }
   }
 
+  /// Resolusi ID notifikasi: Notifikasi dengan order_id yang sama selalu menggunakan ID tetap
+  /// sehingga di status bar Android hanya muncul SATU notifikasi saja (notifikasi lama langsung ditimpa status terbaru).
+  static int resolveNotificationId(Map<String, dynamic> data) {
+    final orderId = data['order_id'] ?? data['orderId'] ?? data['id'];
+    if (orderId != null && orderId.toString().isNotEmpty) {
+      final parsed = int.tryParse(orderId.toString()) ?? orderId.hashCode.abs();
+      return 70000 + (parsed % 10000);
+    }
+    final type = data['type']?.toString();
+    if (type != null &&
+        (type.contains('order') ||
+            type.contains('food') ||
+            type.contains('ride') ||
+            type.contains('mart') ||
+            type.contains('status'))) {
+      return 77777;
+    }
+    return DateTime.now().millisecondsSinceEpoch % 100000;
+  }
+
   static void _showNotification(
     RemoteNotification? notification,
     Map<String, dynamic> data,
   ) {
     if (notification != null) {
-      int notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
+      int notificationId = resolveNotificationId(data);
       _localNotificationsPlugin.show(
         id: notificationId,
         title: notification.title,
@@ -285,14 +305,16 @@ class NotificationService {
   }
 
   /// Tampilkan notifikasi lokal untuk status penting (seperti kurir dekat)
+  /// Menggunakan ID pesanan agar menimpa notifikasi pesanan sebelumnya (jadi satu notifikasi saja)
   static Future<void> showLocalAlert({
     required String title,
     required String body,
     String? sound,
     String? payload,
+    String? orderId,
   }) async {
     try {
-      int notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
+      int notificationId = resolveNotificationId({'order_id': orderId});
       await _localNotificationsPlugin.show(
         id: notificationId,
         title: title,

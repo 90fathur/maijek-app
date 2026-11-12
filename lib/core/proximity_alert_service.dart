@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'notification_service.dart';
+import 'api_client.dart';
+import '../controllers/notification_controller.dart';
 
 /// Layanan Peringatan Jarak Dekat Kurir (Proximity Alert Service)
 /// Membunyikan nada dering notifikasi khusus saat kurir berada dalam radius <= 100 meter
@@ -82,8 +84,18 @@ class ProximityAlertService {
             body:
                 'Kurir berjarak ~${distanceMeters.round()} meter dari lokasi Anda. Silakan bersiap menyambut kurir!',
             sound: 'courier_near',
+            orderId: orderId,
           );
         } catch (_) {}
+
+        // 5. Catat ke Pesan Notifikasi (Kotak Masuk) & update UI reactive (hanya 1 notifikasi terakhir untuk order ini)
+        _recordProximityToInbox(
+          orderId: orderId,
+          orderType: orderType,
+          distanceMeters: distanceMeters,
+          driverName: driverName,
+          driverPlate: driverPlate,
+        );
 
         return true;
       }
@@ -92,6 +104,44 @@ class ProximityAlertService {
     }
 
     return false;
+  }
+
+  /// Catat notifikasi kurir dekat ke Kotak Masuk (Database & List Notifikasi In-App)
+  static void _recordProximityToInbox({
+    required String orderId,
+    required String orderType,
+    required double distanceMeters,
+    String? driverName,
+    String? driverPlate,
+  }) async {
+    final title = '🛵 Kurir Sudah Dekat!';
+    final dName = (driverName != null && driverName.isNotEmpty) ? ' ($driverName)' : '';
+    final dPlate = (driverPlate != null && driverPlate.isNotEmpty) ? ' [$driverPlate]' : '';
+    final body =
+        'Kurir$dName$dPlate pesanan #$orderId sudah berada di radius ~${distanceMeters.round()}m dari lokasi Anda. Silakan bersiap menyambut kurir!';
+
+    // 1. Simpan ke database backend
+    try {
+      await ApiClient.post('/user/notifications/proximity', {
+        'order_id': orderId,
+        'title': title,
+        'message': body,
+      });
+    } catch (e) {
+      debugPrint('Error logging proximity notification to server: $e');
+    }
+
+    // 2. Perbarui list notifikasi in-app langsung jika controller aktif
+    try {
+      if (Get.isRegistered<NotificationController>()) {
+        Get.find<NotificationController>().addOrUpdateOrderNotification(
+          orderId: orderId,
+          title: title,
+          message: body,
+          type: 'order_proximity',
+        );
+      }
+    } catch (_) {}
   }
 
   /// Memutar file audio notifikasi khusus kurir dekat
