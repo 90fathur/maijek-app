@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../views/main/main_layout_view.dart';
@@ -28,20 +29,22 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await localNotificationsPlugin.initialize(settings: initializationSettings);
 
   const AndroidNotificationChannel defaultChannel = AndroidNotificationChannel(
-    'high_importance_channel',
-    'Notifikasi Penting Maijek',
+    'maijek_user_general_v4',
+    'Notifikasi Pelanggan Maijek',
     description: 'Saluran notifikasi utama untuk status perjalanan dan pesan.',
     importance: Importance.max,
     playSound: true,
+    sound: RawResourceAndroidNotificationSound('courier_near'),
     enableVibration: true,
   );
 
   const AndroidNotificationChannel orderChannel = AndroidNotificationChannel(
-    'maifood_order_channel_v2',
+    'maijek_user_order_v4',
     'Status Pesanan Maijek',
     description: 'Saluran notifikasi pembaruan pesanan dan makanan.',
     importance: Importance.max,
     playSound: true,
+    sound: RawResourceAndroidNotificationSound('courier_near'),
     enableVibration: true,
   );
 
@@ -71,6 +74,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
+            sound: const RawResourceAndroidNotificationSound('courier_near'),
             enableVibration: true,
             visibility: NotificationVisibility.public,
             ticker: title,
@@ -90,22 +94,24 @@ class NotificationService {
 
   static const AndroidNotificationChannel defaultChannel =
       AndroidNotificationChannel(
-        'high_importance_channel',
-        'Notifikasi Penting Maijek',
+        'maijek_user_general_v4',
+        'Notifikasi Pelanggan Maijek',
         description:
             'Saluran notifikasi utama untuk status perjalanan dan pesan.',
         importance: Importance.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('courier_near'),
         enableVibration: true,
       );
 
   static const AndroidNotificationChannel orderChannel =
       AndroidNotificationChannel(
-        'maifood_order_channel_v2',
+        'maijek_user_order_v4',
         'Status Pesanan Maijek',
         description: 'Saluran notifikasi pembaruan pesanan dan makanan.',
         importance: Importance.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('courier_near'),
         enableVibration: true,
       );
 
@@ -177,6 +183,14 @@ class NotificationService {
 
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      // Putar nada dering resmi pelanggan saat ada notifikasi masuk di foreground
+      try {
+        final player = AudioPlayer();
+        player.setReleaseMode(ReleaseMode.release);
+        player.setVolume(1.0);
+        player.play(AssetSource('audio/courier_near.mp3'));
+      } catch (_) {}
+
       if (message.notification != null) {
         _showNotification(message.notification, message.data);
       } else if (message.data.isNotEmpty && message.data['title'] != null) {
@@ -194,6 +208,7 @@ class NotificationService {
               importance: Importance.max,
               priority: Priority.high,
               playSound: true,
+              sound: const RawResourceAndroidNotificationSound('courier_near'),
               enableVibration: true,
               visibility: NotificationVisibility.public,
               ticker: message.data['title'],
@@ -293,6 +308,7 @@ class NotificationService {
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
+            sound: const RawResourceAndroidNotificationSound('courier_near'),
             enableVibration: true,
             visibility: NotificationVisibility.public,
             ticker: notification.title,
@@ -328,7 +344,7 @@ class NotificationService {
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
-            sound: sound != null ? RawResourceAndroidNotificationSound(sound) : null,
+            sound: RawResourceAndroidNotificationSound(sound ?? 'courier_near'),
             enableVibration: true,
             visibility: NotificationVisibility.public,
             ticker: title,
