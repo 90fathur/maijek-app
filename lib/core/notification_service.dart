@@ -29,7 +29,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await localNotificationsPlugin.initialize(settings: initializationSettings);
 
   const AndroidNotificationChannel defaultChannel = AndroidNotificationChannel(
-    'maijek_user_general_v4',
+    'maijek_user_general_v5',
     'Notifikasi Pelanggan Maijek',
     description: 'Saluran notifikasi utama untuk status perjalanan dan pesan.',
     importance: Importance.max,
@@ -39,9 +39,36 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
 
   const AndroidNotificationChannel orderChannel = AndroidNotificationChannel(
-    'maijek_user_order_v4',
+    'maijek_user_order_v5',
     'Status Pesanan Maijek',
     description: 'Saluran notifikasi pembaruan pesanan dan makanan.',
+    importance: Importance.max,
+    playSound: true,
+    sound: RawResourceAndroidNotificationSound('courier_near'),
+    enableVibration: true,
+  );
+
+  const AndroidNotificationChannel fallbackHighImp = AndroidNotificationChannel(
+    'high_importance_channel',
+    'Notifikasi Penting Maijek',
+    importance: Importance.max,
+    playSound: true,
+    sound: RawResourceAndroidNotificationSound('courier_near'),
+    enableVibration: true,
+  );
+
+  const AndroidNotificationChannel legacyGeneralV4 = AndroidNotificationChannel(
+    'maijek_user_general_v4',
+    'Notifikasi Umum Maijek (Cadangan)',
+    importance: Importance.max,
+    playSound: true,
+    sound: RawResourceAndroidNotificationSound('courier_near'),
+    enableVibration: true,
+  );
+
+  const AndroidNotificationChannel legacyOrderV4 = AndroidNotificationChannel(
+    'maijek_user_order_v4',
+    'Status Pesanan Maijek (Cadangan)',
     importance: Importance.max,
     playSound: true,
     sound: RawResourceAndroidNotificationSound('courier_near'),
@@ -54,6 +81,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       >();
   await androidImpl?.createNotificationChannel(defaultChannel);
   await androidImpl?.createNotificationChannel(orderChannel);
+  await androidImpl?.createNotificationChannel(fallbackHighImp);
+  await androidImpl?.createNotificationChannel(legacyGeneralV4);
+  await androidImpl?.createNotificationChannel(legacyOrderV4);
 
   // Jika payload data-only (tanpa notifikasi sistem otomatis)
   if (message.notification == null && message.data.isNotEmpty) {
@@ -77,6 +107,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
             sound: const RawResourceAndroidNotificationSound('courier_near'),
             enableVibration: true,
             visibility: NotificationVisibility.public,
+            audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
             ticker: title,
           ),
         ),
@@ -94,7 +125,7 @@ class NotificationService {
 
   static const AndroidNotificationChannel defaultChannel =
       AndroidNotificationChannel(
-        'maijek_user_general_v4',
+        'maijek_user_general_v5',
         'Notifikasi Pelanggan Maijek',
         description:
             'Saluran notifikasi utama untuk status perjalanan dan pesan.',
@@ -106,9 +137,39 @@ class NotificationService {
 
   static const AndroidNotificationChannel orderChannel =
       AndroidNotificationChannel(
-        'maijek_user_order_v4',
+        'maijek_user_order_v5',
         'Status Pesanan Maijek',
         description: 'Saluran notifikasi pembaruan pesanan dan makanan.',
+        importance: Importance.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound('courier_near'),
+        enableVibration: true,
+      );
+
+  static const AndroidNotificationChannel fallbackHighImp =
+      AndroidNotificationChannel(
+        'high_importance_channel',
+        'Notifikasi Penting Maijek',
+        importance: Importance.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound('courier_near'),
+        enableVibration: true,
+      );
+
+  static const AndroidNotificationChannel legacyGeneralV4 =
+      AndroidNotificationChannel(
+        'maijek_user_general_v4',
+        'Notifikasi Umum Maijek (Cadangan)',
+        importance: Importance.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound('courier_near'),
+        enableVibration: true,
+      );
+
+  static const AndroidNotificationChannel legacyOrderV4 =
+      AndroidNotificationChannel(
+        'maijek_user_order_v4',
+        'Status Pesanan Maijek (Cadangan)',
         importance: Importance.max,
         playSound: true,
         sound: RawResourceAndroidNotificationSound('courier_near'),
@@ -161,6 +222,9 @@ class NotificationService {
         >();
     await androidImpl?.createNotificationChannel(defaultChannel);
     await androidImpl?.createNotificationChannel(orderChannel);
+    await androidImpl?.createNotificationChannel(fallbackHighImp);
+    await androidImpl?.createNotificationChannel(legacyGeneralV4);
+    await androidImpl?.createNotificationChannel(legacyOrderV4);
     await androidImpl?.requestNotificationsPermission();
 
     // Register background handler
@@ -211,6 +275,7 @@ class NotificationService {
               sound: const RawResourceAndroidNotificationSound('courier_near'),
               enableVibration: true,
               visibility: NotificationVisibility.public,
+              audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
               ticker: message.data['title'],
             ),
           ),
@@ -311,6 +376,7 @@ class NotificationService {
             sound: const RawResourceAndroidNotificationSound('courier_near'),
             enableVibration: true,
             visibility: NotificationVisibility.public,
+            audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
             ticker: notification.title,
             fullScreenIntent: false,
           ),
@@ -347,6 +413,7 @@ class NotificationService {
             sound: RawResourceAndroidNotificationSound(sound ?? 'courier_near'),
             enableVibration: true,
             visibility: NotificationVisibility.public,
+            audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
             ticker: title,
           ),
         ),
