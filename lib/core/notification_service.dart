@@ -55,13 +55,13 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         AndroidFlutterLocalNotificationsPlugin
       >();
   try {
-    await androidImpl?.deleteNotificationChannel('maijek_user_general_v6');
-    await androidImpl?.deleteNotificationChannel('maijek_user_general_v5');
-    await androidImpl?.deleteNotificationChannel('maijek_user_general_v4');
-    await androidImpl?.deleteNotificationChannel('maijek_user_order_v6');
-    await androidImpl?.deleteNotificationChannel('maijek_user_order_v5');
-    await androidImpl?.deleteNotificationChannel('maijek_user_order_v4');
-    await androidImpl?.deleteNotificationChannel('high_importance_channel');
+    await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_general_v6');
+    await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_general_v5');
+    await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_general_v4');
+    await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_order_v6');
+    await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_order_v5');
+    await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_order_v4');
+    await androidImpl?.deleteNotificationChannel(channelId: 'high_importance_channel');
   } catch (_) {}
   await androidImpl?.createNotificationChannel(defaultChannel);
   await androidImpl?.createNotificationChannel(orderChannel);
@@ -200,13 +200,13 @@ class NotificationService {
           AndroidFlutterLocalNotificationsPlugin
         >();
     try {
-      await androidImpl?.deleteNotificationChannel('maijek_user_general_v6');
-      await androidImpl?.deleteNotificationChannel('maijek_user_general_v5');
-      await androidImpl?.deleteNotificationChannel('maijek_user_general_v4');
-      await androidImpl?.deleteNotificationChannel('maijek_user_order_v6');
-      await androidImpl?.deleteNotificationChannel('maijek_user_order_v5');
-      await androidImpl?.deleteNotificationChannel('maijek_user_order_v4');
-      await androidImpl?.deleteNotificationChannel('high_importance_channel');
+      await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_general_v6');
+      await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_general_v5');
+      await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_general_v4');
+      await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_order_v6');
+      await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_order_v5');
+      await androidImpl?.deleteNotificationChannel(channelId: 'maijek_user_order_v4');
+      await androidImpl?.deleteNotificationChannel(channelId: 'high_importance_channel');
     } catch (_) {}
     await androidImpl?.createNotificationChannel(defaultChannel);
     await androidImpl?.createNotificationChannel(orderChannel);
