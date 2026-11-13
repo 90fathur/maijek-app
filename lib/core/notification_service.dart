@@ -29,61 +29,42 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await localNotificationsPlugin.initialize(settings: initializationSettings);
 
   const AndroidNotificationChannel defaultChannel = AndroidNotificationChannel(
-    'maijek_user_general_v5',
+    'maijek_user_general_v7',
     'Notifikasi Pelanggan Maijek',
     description: 'Saluran notifikasi utama untuk status perjalanan dan pesan.',
     importance: Importance.max,
     playSound: true,
     sound: RawResourceAndroidNotificationSound('courier_near'),
     enableVibration: true,
+    audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
   );
 
   const AndroidNotificationChannel orderChannel = AndroidNotificationChannel(
-    'maijek_user_order_v5',
+    'maijek_user_order_v7',
     'Status Pesanan Maijek',
     description: 'Saluran notifikasi pembaruan pesanan dan makanan.',
     importance: Importance.max,
     playSound: true,
     sound: RawResourceAndroidNotificationSound('courier_near'),
     enableVibration: true,
-  );
-
-  const AndroidNotificationChannel fallbackHighImp = AndroidNotificationChannel(
-    'high_importance_channel',
-    'Notifikasi Penting Maijek',
-    importance: Importance.max,
-    playSound: true,
-    sound: RawResourceAndroidNotificationSound('courier_near'),
-    enableVibration: true,
-  );
-
-  const AndroidNotificationChannel legacyGeneralV4 = AndroidNotificationChannel(
-    'maijek_user_general_v4',
-    'Notifikasi Umum Maijek (Cadangan)',
-    importance: Importance.max,
-    playSound: true,
-    sound: RawResourceAndroidNotificationSound('courier_near'),
-    enableVibration: true,
-  );
-
-  const AndroidNotificationChannel legacyOrderV4 = AndroidNotificationChannel(
-    'maijek_user_order_v4',
-    'Status Pesanan Maijek (Cadangan)',
-    importance: Importance.max,
-    playSound: true,
-    sound: RawResourceAndroidNotificationSound('courier_near'),
-    enableVibration: true,
+    audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
   );
 
   final androidImpl = localNotificationsPlugin
       .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin
       >();
+  try {
+    await androidImpl?.deleteNotificationChannel('maijek_user_general_v6');
+    await androidImpl?.deleteNotificationChannel('maijek_user_general_v5');
+    await androidImpl?.deleteNotificationChannel('maijek_user_general_v4');
+    await androidImpl?.deleteNotificationChannel('maijek_user_order_v6');
+    await androidImpl?.deleteNotificationChannel('maijek_user_order_v5');
+    await androidImpl?.deleteNotificationChannel('maijek_user_order_v4');
+    await androidImpl?.deleteNotificationChannel('high_importance_channel');
+  } catch (_) {}
   await androidImpl?.createNotificationChannel(defaultChannel);
   await androidImpl?.createNotificationChannel(orderChannel);
-  await androidImpl?.createNotificationChannel(fallbackHighImp);
-  await androidImpl?.createNotificationChannel(legacyGeneralV4);
-  await androidImpl?.createNotificationChannel(legacyOrderV4);
 
   // Jika payload data-only (tanpa notifikasi sistem otomatis)
   if (message.notification == null && message.data.isNotEmpty) {
@@ -125,7 +106,7 @@ class NotificationService {
 
   static const AndroidNotificationChannel defaultChannel =
       AndroidNotificationChannel(
-        'maijek_user_general_v5',
+        'maijek_user_general_v7',
         'Notifikasi Pelanggan Maijek',
         description:
             'Saluran notifikasi utama untuk status perjalanan dan pesan.',
@@ -133,48 +114,29 @@ class NotificationService {
         playSound: true,
         sound: RawResourceAndroidNotificationSound('courier_near'),
         enableVibration: true,
+        audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
       );
 
   static const AndroidNotificationChannel orderChannel =
       AndroidNotificationChannel(
-        'maijek_user_order_v5',
+        'maijek_user_order_v7',
         'Status Pesanan Maijek',
         description: 'Saluran notifikasi pembaruan pesanan dan makanan.',
         importance: Importance.max,
         playSound: true,
         sound: RawResourceAndroidNotificationSound('courier_near'),
         enableVibration: true,
+        audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
       );
 
-  static const AndroidNotificationChannel fallbackHighImp =
-      AndroidNotificationChannel(
-        'high_importance_channel',
-        'Notifikasi Penting Maijek',
-        importance: Importance.max,
-        playSound: true,
-        sound: RawResourceAndroidNotificationSound('courier_near'),
-        enableVibration: true,
-      );
-
-  static const AndroidNotificationChannel legacyGeneralV4 =
-      AndroidNotificationChannel(
-        'maijek_user_general_v4',
-        'Notifikasi Umum Maijek (Cadangan)',
-        importance: Importance.max,
-        playSound: true,
-        sound: RawResourceAndroidNotificationSound('courier_near'),
-        enableVibration: true,
-      );
-
-  static const AndroidNotificationChannel legacyOrderV4 =
-      AndroidNotificationChannel(
-        'maijek_user_order_v4',
-        'Status Pesanan Maijek (Cadangan)',
-        importance: Importance.max,
-        playSound: true,
-        sound: RawResourceAndroidNotificationSound('courier_near'),
-        enableVibration: true,
-      );
+  static Future<void> playAlertSound() async {
+    try {
+      final player = AudioPlayer();
+      await player.setReleaseMode(ReleaseMode.release);
+      await player.setVolume(1.0);
+      await player.play(AssetSource('audio/courier_near.mp3'));
+    } catch (_) {}
+  }
 
   static Future<void> init() async {
     // Request permission (termasuk Android 13+ & iOS)
@@ -191,6 +153,23 @@ class NotificationService {
       badge: true,
       sound: true,
     );
+
+    // Konfigurasi audio global agar memutar di volume nada dering / notifikasi
+    try {
+      await AudioPlayer.global.setAudioContext(AudioContext(
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: true,
+          stayAwake: true,
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.notificationRingtone,
+          audioFocus: AndroidAudioFocus.gainTransientExclusive,
+        ),
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.ambient,
+          options: {AVAudioSessionOptions.mixWithOthers},
+        ),
+      ));
+    } catch (_) {}
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -220,11 +199,17 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
+    try {
+      await androidImpl?.deleteNotificationChannel('maijek_user_general_v6');
+      await androidImpl?.deleteNotificationChannel('maijek_user_general_v5');
+      await androidImpl?.deleteNotificationChannel('maijek_user_general_v4');
+      await androidImpl?.deleteNotificationChannel('maijek_user_order_v6');
+      await androidImpl?.deleteNotificationChannel('maijek_user_order_v5');
+      await androidImpl?.deleteNotificationChannel('maijek_user_order_v4');
+      await androidImpl?.deleteNotificationChannel('high_importance_channel');
+    } catch (_) {}
     await androidImpl?.createNotificationChannel(defaultChannel);
     await androidImpl?.createNotificationChannel(orderChannel);
-    await androidImpl?.createNotificationChannel(fallbackHighImp);
-    await androidImpl?.createNotificationChannel(legacyGeneralV4);
-    await androidImpl?.createNotificationChannel(legacyOrderV4);
     await androidImpl?.requestNotificationsPermission();
 
     // Register background handler
@@ -248,12 +233,7 @@ class NotificationService {
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       // Putar nada dering resmi pelanggan saat ada notifikasi masuk di foreground
-      try {
-        final player = AudioPlayer();
-        player.setReleaseMode(ReleaseMode.release);
-        player.setVolume(1.0);
-        player.play(AssetSource('audio/courier_near.mp3'));
-      } catch (_) {}
+      playAlertSound();
 
       if (message.notification != null) {
         _showNotification(message.notification, message.data);
