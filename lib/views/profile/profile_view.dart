@@ -32,9 +32,17 @@ class ProfileView extends StatelessWidget {
         int nameChangesCount = int.tryParse(user['name_changes_count']?.toString() ?? '0') ?? 0;
         bool canChangeName = user['can_change_name'] != false && nameChangesCount < 1;
 
-        return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          children: [
+        int totalOrdersCompleted = int.tryParse(user['total_orders_completed']?.toString() ?? '0') ?? 0;
+        String customerTier = (user['customer_tier'] ?? (totalOrdersCompleted >= 10 ? 'Pelanggan Setia' : (totalOrdersCompleted >= 3 ? 'Pelanggan Aktif' : (totalOrdersCompleted >= 1 ? 'Mencoba Layanan' : 'Pelanggan Baru')))).toString();
+        int totalRideOrders = int.tryParse(user['total_ride_orders']?.toString() ?? '0') ?? 0;
+        int totalFoodOrders = int.tryParse(user['total_food_orders']?.toString() ?? '0') ?? 0;
+
+        return RefreshIndicator(
+          onRefresh: () => authController.fetchProfile(),
+          color: const Color(0xFF059669),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            children: [
             // 1. Avatar & Info Header
             Center(
               child: Stack(
@@ -172,6 +180,97 @@ class ProfileView extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 14),
+
+            // Kartu Jam Terbang & Aktivitas Pesanan Maijek
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF065F46), Color(0xFF047857), Color(0xFF059669)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF059669).withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.verified_rounded, color: Colors.white, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                customerTier.toUpperCase(),
+                                style: const TextStyle(
+                                  color: Color(0xFFFEF08A),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            if (totalOrdersCompleted > 0)
+                              Text(
+                                '$totalRideOrders Ride • $totalFoodOrders Food',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          '$totalOrdersCompleted Kali Menggunakan Maijek',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          totalOrdersCompleted == 0
+                              ? 'Yuk pesan perjalanan atau makanan pertamamu!'
+                              : 'Terima kasih telah setia mempercayakan Maijek!',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
 
             // Informasi Akun & Keamanan
@@ -199,6 +298,19 @@ class ProfileView extends StatelessWidget {
                 badgeColor: const Color(0xFF059669),
                 badgeBg: const Color(0xFFECFDF5),
                 subtitle: 'Digunakan untuk login akun & komunikasi pesanan',
+              ),
+              _buildDivider(),
+              _buildInfoTile(
+                icon: Icons.receipt_long_rounded,
+                iconColor: const Color(0xFF059669),
+                label: 'Aktivitas Penggunaan Layanan',
+                value: '$totalOrdersCompleted Kali Pesanan Selesai',
+                badgeText: customerTier,
+                badgeColor: const Color(0xFF059669),
+                badgeBg: const Color(0xFFECFDF5),
+                subtitle: totalOrdersCompleted == 0
+                    ? 'Belum ada riwayat pesanan selesai'
+                    : 'Akumulasi total pesanan Ride, Send, Titip & MaiFood',
               ),
               if (userEmail != null && userEmail.trim().isNotEmpty) ...[
                 _buildDivider(),
@@ -342,10 +454,11 @@ class ProfileView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
           ],
-        );
-      }),
-    );
-  }
+        ),
+      );
+    }),
+  );
+}
 
   Widget _buildInfoTile({
     required IconData icon,
@@ -425,7 +538,7 @@ class ProfileView extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -449,7 +562,7 @@ class ProfileView extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.1),
+          color: iconColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: iconColor, size: 22),
