@@ -1,0 +1,40 @@
+============================================================
+CATATAN RILIS GOOGLE PLAY CONSOLE - MAIJEK APP (PELANGGAN)
+============================================================
+Versi Aplikasi : v1.0.57
+Kode Rilis     : 62 (Versi Terbaru)
+File Bundle    : maijek_app_v1.0.57_62.aab
+Tanggal Rilis  : 16 November 2026
+
+------------------------------------------------------------
+DESKRIPSI SINGKAT / PROMOTIONAL TEXT (Maks. 80 Karakter)
+------------------------------------------------------------
+Pembaruan tarif dasar, biaya layanan dinamis, dan lencana loyalitas pelanggan!
+
+------------------------------------------------------------
+CATATAN RILIS LENGKAP (BAHASA INDONESIA)
+------------------------------------------------------------
+Yang Baru di Versi 1.0.57:
+1. PENYESUAIAN TARIF MAI-TITIP & SINKRONISASI REAL-TIME:
+   - Pembaruan tarif dasar Mai-Titip menyesuaikan standar operasional terbaru (Rp 8.600).
+   - Sinkronisasi instan pengaturan tarif dasar & per-KM langsung saat halaman pemesanan dibuka.
+
+2. BIAYA LAYANAN APLIKASI DINAMIS & TRANSPARAN:
+   - Dukungan penuh pengaturan biaya layanan konsumen (MaiFood & MaiMart) dari server.
+   - Sinkronisasi otomatis saat masuk ke halaman checkout. Jika biaya dinonaktifkan di sistem pusat, rincian biaya layanan otomatis disembunyikan dan tidak ditagihkan.
+
+3. LENCANA LOYALITAS & TOTAL TRANSAKSI PELANGGAN:
+   - Tampilan baru di profil pengguna yang menampilkan jumlah riwayat pesanan selesai dan tingkat loyalitas pelanggan (Pelanggan Baru, Aktif, Setia).
+
+4. PENINGKATAN PERFORMA & NOTIFIKASI:
+   - Konsolidasi notifikasi status pesanan agar lebih bersih dan rapi di status bar perangkat.
+   - Peningkatan responsivitas pelacakan pesanan dan stabilitas aplikasi.
+
+------------------------------------------------------------
+--- TEKS SINGKAT UNTUK GOOGLE PLAY CONSOLE (What's New / Ada yang baru) ---
+Pembaruan v1.0.57:
+• Pembaruan tarif dasar dan perhitungan rute Mai-Titip secara real-time.
+• Transparansi biaya layanan aplikasi konsumen pada checkout MaiFood & MaiMart.
+• Tampilan lencana loyalitas pengguna dan ringkasan aktivitas transaksi di Profil.
+• Peningkatan stabilitas notifikasi dan performa aplikasi.
+============================================================
