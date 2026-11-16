@@ -144,7 +144,7 @@ class MartController extends GetxController {
   var martCarPerKmFare = 4000.obs;
   var martCarBaseDistance = 3.0.obs;
 
-  var martServiceFee = 2000.obs;
+  var martServiceFee = 0.obs;
   var isQrisActive = true.obs;
   var qrisMaintenanceMessage = 'Metode pembayaran QRIS sedang dalam pemeliharaan sementara.'.obs;
 
@@ -171,7 +171,7 @@ class MartController extends GetxController {
           martCarPerKmFare.value = body['data']['food_car_per_km_fare'] ?? 4000;
           martCarBaseDistance.value = (body['data']['food_car_base_distance'] ?? 3.0).toDouble();
 
-          martServiceFee.value = body['data']['food_service_fee'] ?? 2000;
+          martServiceFee.value = int.tryParse(body['data']['food_service_fee']?.toString() ?? '0') ?? 0;
 
           if (body['data']['qris_mart_active'] != null || body['data']['qris_active'] != null) {
             isQrisActive.value = (body['data']['qris_mart_active'] ?? body['data']['qris_active']).toString() == '1' ||

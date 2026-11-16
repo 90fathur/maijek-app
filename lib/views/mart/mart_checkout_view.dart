@@ -16,6 +16,10 @@ class MartCheckoutView extends StatelessWidget {
     final AuthController authController = Get.find<AuthController>();
     final TextEditingController notesInput = TextEditingController(text: controller.deliveryNotes.value);
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchSettings();
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(

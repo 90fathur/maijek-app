@@ -146,6 +146,9 @@ class CheckoutView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchSettings();
+    });
     return Obx(() {
       if (controller.cart.isEmpty) {
         return Scaffold(

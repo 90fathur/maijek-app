@@ -94,7 +94,7 @@ class FoodController extends GetxController {
   var foodCarPerKmFare = 4000.obs;
   var foodCarBaseDistance = 3.0.obs;
 
-  var foodServiceFee = 2000.obs;
+  var foodServiceFee = 0.obs;
   var isQrisActive = true.obs;
   var qrisMaintenanceMessage = 'Metode pembayaran QRIS sedang dalam pemeliharaan sementara. Silakan gunakan metode Tunai atau Mai-Pay.'.obs;
 
@@ -135,7 +135,7 @@ class FoodController extends GetxController {
           foodCarPerKmFare.value = body['data']['food_car_per_km_fare'] ?? 4000;
           foodCarBaseDistance.value = (body['data']['food_car_base_distance'] ?? 3.0).toDouble();
 
-          foodServiceFee.value = body['data']['food_service_fee'] ?? 2000;
+          foodServiceFee.value = int.tryParse(body['data']['food_service_fee']?.toString() ?? '0') ?? 0;
 
           if (body['data']['qris_food_active'] != null || body['data']['qris_active'] != null) {
             isQrisActive.value = (body['data']['qris_food_active'] ?? body['data']['qris_active']).toString() == '1' ||
