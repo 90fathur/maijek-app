@@ -192,9 +192,9 @@ class OrderController extends GetxController {
   var sendMobilBaseDistance = 3.0.obs;
   var sendMobilPerKm = 4000.obs;
   
-  var titipMotorBaseFare = 10000.obs;
-  var titipMotorBaseDistance = 3.0.obs;
-  var titipMotorPerKm = 2000.obs;
+  var titipMotorBaseFare = 8600.obs;
+  var titipMotorBaseDistance = 2.0.obs;
+  var titipMotorPerKm = 1500.obs;
   
   var titipMobilBaseFare = 25000.obs;
   var titipMobilBaseDistance = 3.0.obs;
@@ -485,9 +485,9 @@ class OrderController extends GetxController {
           sendMobilBaseDistance.value = (body['data']['send_mobil_base_distance'] ?? 3.0).toDouble();
           sendMobilPerKm.value = int.tryParse(body['data']['send_mobil_per_km'].toString()) ?? 4000;
           
-          titipMotorBaseFare.value = int.tryParse(body['data']['titip_motor_base_fare'].toString()) ?? 10000;
-          titipMotorBaseDistance.value = (body['data']['titip_motor_base_distance'] ?? 3.0).toDouble();
-          titipMotorPerKm.value = int.tryParse(body['data']['titip_motor_per_km'].toString()) ?? 2000;
+          titipMotorBaseFare.value = int.tryParse(body['data']['titip_motor_base_fare'].toString()) ?? 8600;
+          titipMotorBaseDistance.value = (body['data']['titip_motor_base_distance'] ?? 2.0).toDouble();
+          titipMotorPerKm.value = int.tryParse(body['data']['titip_motor_per_km'].toString()) ?? 1500;
           
           titipMobilBaseFare.value = int.tryParse(body['data']['titip_mobil_base_fare'].toString()) ?? 25000;
           titipMobilBaseDistance.value = (body['data']['titip_mobil_base_distance'] ?? 3.0).toDouble();

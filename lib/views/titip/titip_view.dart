@@ -37,6 +37,7 @@ class _TitipViewState extends State<TitipView> {
     orderController.reset();
     orderController.currentState.value = OrderState.idle;
     orderController.selectedVehicle.value = 'mai_titip_motor';
+    orderController.fetchSettings(); // Tarik tarif jastip & sistem terbaru dari server
     authController.fetchProfile(); // Refresh saldo
   }
 
