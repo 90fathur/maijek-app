@@ -1,0 +1,42 @@
+============================================================
+CATATAN RILIS GOOGLE PLAY CONSOLE - MAIJEK APP (PELANGGAN)
+============================================================
+Versi Aplikasi : v1.0.58
+Kode Rilis     : 63 (Versi Terbaru)
+File Bundle    : maijek_app_v1.0.58_63.aab
+Tanggal Rilis  : 17 November 2026
+
+------------------------------------------------------------
+DESKRIPSI SINGKAT / PROMOTIONAL TEXT (Maks. 80 Karakter)
+------------------------------------------------------------
+Layanan baru Mai School antar jemput sekolah, helm anak aman, dan pelacakan live!
+
+------------------------------------------------------------
+CATATAN RILIS LENGKAP (BAHASA INDONESIA)
+------------------------------------------------------------
+Yang Baru di Versi 1.0.58:
+1. FITUR BARU: MAI SCHOOL (ANTAR JEMPUT ANAK SEKOLAH)
+   - Solusi langganan antar jemput sekolah harian, 3 hari, 4 hari, dan mingguan dengan diskon hemat.
+   - Mitra driver terverifikasi dengan standar keselamatan khusus dan helm anak ber-SNI.
+   - Fitur Chat & Tanya Jawab langsung dengan mitra driver sebelum orang tua memesan paket.
+   - Pelacakan rute real-time dan notifikasi foto bukti kedatangan aman di sekolah / rumah.
+   - Fitur Pengajuan Izin Sakit yang fleksibel langsung dari aplikasi.
+
+2. PENINGKATAN ANTARMUKA & KEMUDAHAN NAVIGASI:
+   - Kartu akses cepat layanan Mai School langsung di beranda utama aplikasi.
+   - Tampilan rincian biaya transparan (jarak tempuh, biaya saudara/kakak-adik, dan diskon paket).
+
+3. PENINGKATAN PERFORMA & STABILITAS:
+   - Peningkatan efisiensi sinkronisasi pengaturan dinamis dari server pusat.
+   - Perbaikan bug minor dan optimalisasi performa rendering antarmuka pengguna.
+
+------------------------------------------------------------
+--- TEKS SINGKAT UNTUK GOOGLE PLAY CONSOLE (What's New / Ada yang baru) ---
+Pembaruan v1.0.58:
+• Layanan Baru Mai School: Solusi berlangganan antar jemput anak sekolah aman & terpercaya.
+• Paket Fleksibel: Pilihan paket Harian, 3 Hari, 4 Hari, hingga Mingguan dengan diskon hemat.
+• Fitur Keamanan: Helm anak berstandar, mitra driver terverifikasi, dan foto bukti sampai aman.
+• Chat Calon Driver: Tanya jawab langsung dengan calon pengantar sebelum konfirmasi langganan.
+• Pelacakan Live & Izin Sakit: Pantau penjemputan anak secara real-time dan kemudahan izin sakit.
+• Peningkatan stabilitas dan responsivitas aplikasi.
+============================================================
