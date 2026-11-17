@@ -20,6 +20,10 @@ import 'views/titip/titip_view.dart';
 import 'views/profile/cs_chat_view.dart';
 import 'views/inbox/inbox_view.dart';
 import 'views/mart/mart_view.dart';
+import 'views/school/school_home_view.dart';
+import 'views/school/school_booking_view.dart';
+import 'views/school/school_tracking_view.dart';
+import 'views/school/school_subscriptions_view.dart';
 import 'controllers/mart_controller.dart';
 import 'controllers/food_controller.dart';
 
@@ -61,6 +65,10 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/titip', page: () => const TitipView()),
         GetPage(name: '/cs-chat', page: () => const CsChatView()),
         GetPage(name: '/inbox', page: () => const InboxView()),
+        GetPage(name: '/school', page: () => const SchoolHomeView()),
+        GetPage(name: '/school/booking', page: () => const SchoolBookingView()),
+        GetPage(name: '/school/tracking', page: () => const SchoolTrackingView()),
+        GetPage(name: '/school/subscriptions', page: () => const SchoolSubscriptionsView()),
       ],
     );
   }

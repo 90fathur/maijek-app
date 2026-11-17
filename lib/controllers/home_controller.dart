@@ -19,6 +19,7 @@ class HomeController extends GetxController {
   var newMerchants = [].obs;
   var latestMenus = [].obs;
   var recommendedNearbyMenus = [].obs;
+  var schoolFeatureStatus = 'disabled'.obs;
   var isLoading = false.obs;
 
   var currentBannerPage = 0.obs;
@@ -194,6 +195,15 @@ class HomeController extends GetxController {
       } catch (e) {
         recommendedNearbyMenus.clear();
       }
+
+      // 8. Cek Status Layanan Mai School (Antar Jemput Anak)
+      try {
+        final schoolRes = await ApiClient.get('/user/school/status');
+        if (schoolRes.statusCode == 200) {
+          final data = json.decode(schoolRes.body)['data'];
+          schoolFeatureStatus.value = data['feature_status'] ?? 'disabled';
+        }
+      } catch (_) {}
     } catch (e) {
       // Handle error
     } finally {

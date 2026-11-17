@@ -666,6 +666,73 @@ class HomeView extends StatelessWidget {
                 ),
               ],
             ),
+            if (homeController.schoolFeatureStatus.value != 'disabled') ...[
+              const SizedBox(height: 14),
+              InkWell(
+                onTap: () => Get.toNamed('/school'),
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFECFDF5), Color(0xFFF0FDF4)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.school_rounded, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'Mai School',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF065F46)),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: homeController.schoolFeatureStatus.value == 'coming_soon'
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFF059669),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    homeController.schoolFeatureStatus.value == 'coming_soon' ? 'SEGERA' : 'BARU',
+                                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Antar-jemput anak sekolah langganan terpercaya',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF047857)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded, color: Color(0xFF059669), size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       );
