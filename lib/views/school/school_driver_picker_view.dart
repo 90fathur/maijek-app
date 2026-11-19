@@ -62,6 +62,7 @@ class SchoolDriverPickerView extends StatelessWidget {
           itemCount: drivers.length,
           itemBuilder: (context, index) {
             final d = drivers[index];
+            final bool isCar = (d['vehicle_type'] ?? '').toString().toLowerCase() == 'mobil' || (d['vehicle_type'] ?? '').toString().toLowerCase() == 'car';
             final bool hasHelmet = d['has_kids_helmet'] == true;
             final double rating = (d['rating_school'] as num?)?.toDouble() ?? 5.0;
             final int trips = (d['total_school_trips'] as num?)?.toInt() ?? 0;
@@ -135,7 +136,9 @@ class SchoolDriverPickerView extends StatelessWidget {
                     spacing: 6,
                     runSpacing: 6,
                     children: [
-                      if (hasHelmet)
+                      if (isCar)
+                        _buildBadge(Icons.directions_car_rounded, 'Mobil (AC & Sabuk Pengaman)', const Color(0xFF0284C7), const Color(0xFFF0F9FF))
+                      else if (hasHelmet)
                         _buildBadge(Icons.health_and_safety_rounded, 'Helm Anak SNI', const Color(0xFF059669), const Color(0xFFECFDF5)),
                       if (isFemale)
                         _buildBadge(Icons.face_3_rounded, 'Mitra Perempuan (Ibu)', const Color(0xFFDB2777), const Color(0xFFFDF2F8)),

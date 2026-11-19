@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import '../core/api_client.dart';
 import 'package:geolocator/geolocator.dart';
 import '../core/utils.dart';
@@ -468,11 +469,35 @@ class FoodController extends GetxController {
       double mLat = double.parse(merchantDetail['latitude'].toString());
       double mLng = double.parse(merchantDetail['longitude'].toString());
       
-      // Calculate direct distance
+      // Calculate direct distance dengan faktor belokan jalan raya
       double distMeters = Geolocator.distanceBetween(lat, lng, mLat, mLng);
-      deliveryDistance.value = distMeters / 1000.0;
+      deliveryDistance.value = (distMeters * 1.2) / 1000.0;
       if (deliveryDistance.value < 0.1) deliveryDistance.value = 0.1;
+      
+      // Sinkronkan rute jalan raya riil via Google Directions
+      _calculateRealRoadDistanceAsync(mLat, mLng, lat, lng);
     }
+  }
+
+  Future<void> _calculateRealRoadDistanceAsync(double origLat, double origLng, double destLat, double destLng) async {
+    try {
+      const apiKey = 'AIzaSyBWbn_419MiSm_i__nTTX4HIANLmkXuNw4';
+      final url = 'https://maps.googleapis.com/maps/api/directions/json?origin=$origLat,$origLng&destination=$destLat,$destLng&mode=driving&key=$apiKey';
+      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['routes'] != null && (data['routes'] as List).isNotEmpty) {
+          final legs = data['routes'][0]['legs'];
+          if (legs != null && (legs as List).isNotEmpty && legs[0]['distance'] != null) {
+            double meters = (legs[0]['distance']['value'] as num).toDouble();
+            double km = (meters / 1000.0);
+            if (km > 0.1) {
+              deliveryDistance.value = double.parse(km.toStringAsFixed(1));
+            }
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   int get cartTotal {
@@ -546,12 +571,15 @@ class FoodController extends GetxController {
 
     isLoading.value = true;
     try {
+      final int currentFee = calculateDeliveryFee(selectedVehicleType.value);
       final response = await ApiClient.post('/user/food/order', {
         'merchant_id': currentMerchantId.value,
         'delivery_address': address,
         'delivery_lat': lat.toString(),
         'delivery_lng': lng.toString(),
         'distance': distance.toString(),
+        'delivery_fee': currentFee.toString(),
+        'client_delivery_fee': currentFee.toString(),
         'payment_method': paymentMethod,
         'vehicle_type': selectedVehicleType.value,
         'promo_code': appliedPromo.value?['code'] ?? '',
